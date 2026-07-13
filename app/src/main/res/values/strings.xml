@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">CourseHelper</string>
+    <string name="scan_qr_code">扫描二维码</string>
+</resources>
