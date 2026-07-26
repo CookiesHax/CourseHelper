@@ -15,8 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cookieshax.coursehelper.feature.account.model.Account
-import com.cookieshax.coursehelper.feature.account.model.TagWithAccounts
+import com.cookieshax.coursehelper.core.database.entity.Account
+import com.cookieshax.coursehelper.core.database.model.TagWithAccounts
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import kotlinx.coroutines.launch
 

@@ -29,7 +29,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.cookieshax.coursehelper.feature.account.model.Account
+import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.feature.account.ui.items.MainAccountItem
 import com.cookieshax.coursehelper.ui.items.Placeholder
 import kotlinx.coroutines.launch

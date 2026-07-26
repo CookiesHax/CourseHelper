@@ -1,20 +1,14 @@
-package com.cookieshax.coursehelper.feature.account.model
+package com.cookieshax.coursehelper.core.database.entity
 
 import androidx.annotation.Keep
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.cookieshax.coursehelper.core.utils.Constant
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
 import com.cookieshax.coursehelper.core.utils.StringUtils
-import com.google.gson.annotations.SerializedName
+import com.cookieshax.coursehelper.core.database.model.AccountStatus
 import com.google.gson.JsonObject
-
-enum class AccountStatus {
-    UNKNOWN, // 初始状态/检查中
-    VALID,   // 可用
-    EXPIRED  // 失效
-}
+import com.google.gson.annotations.SerializedName
 
 @Keep
 @Entity(tableName = "accounts")
@@ -71,26 +65,3 @@ data class Account(
         }
     }
 }
-
-@Entity(tableName = "tags", indices = [Index(value = ["name"], unique = true)])
-data class Tag(
-    @PrimaryKey(autoGenerate = true) val tagId: Long = 0,
-    val name: String,
-    val color: Int,
-    val order: Int = 0 // 用于排序
-)
-
-@Entity(
-    tableName = "account_tag_cross_ref",
-    primaryKeys = ["uid", "tagId"],
-    indices = [Index("tagId")]
-)
-data class AccountTagCrossRef(
-    val uid: String,
-    val tagId: Long
-)
-
-data class AccountIdName(
-    val uid: String,
-    val name: String
-)

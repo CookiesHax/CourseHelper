@@ -1,4 +1,4 @@
-package com.cookieshax.coursehelper.feature.account.dao
+package com.cookieshax.coursehelper.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -7,9 +7,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.cookieshax.coursehelper.feature.account.model.AccountTagCrossRef
-import com.cookieshax.coursehelper.feature.account.model.Tag
-import com.cookieshax.coursehelper.feature.account.model.TagWithAccounts
+import com.cookieshax.coursehelper.core.database.entity.AccountTagCrossRef
+import com.cookieshax.coursehelper.core.database.entity.Tag
+import com.cookieshax.coursehelper.core.database.model.TagWithAccounts
 import kotlinx.coroutines.flow.Flow
 
 @Dao

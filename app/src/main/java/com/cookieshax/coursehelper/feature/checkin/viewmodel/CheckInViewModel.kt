@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
-import com.cookieshax.coursehelper.feature.account.model.Account
+import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.feature.checkin.model.Captcha
 import com.cookieshax.coursehelper.feature.checkin.model.CaptchaSolver
 import com.cookieshax.coursehelper.feature.checkin.model.CheckInParams

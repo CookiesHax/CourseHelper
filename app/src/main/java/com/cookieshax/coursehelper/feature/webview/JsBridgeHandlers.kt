@@ -259,7 +259,7 @@ class JsBridgeHandlers(
             e.printStackTrace()
         }
     }
-    
+
     private fun handleClientExitLevel() {
         onCloseWebView()
     }

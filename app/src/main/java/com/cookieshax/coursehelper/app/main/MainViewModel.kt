@@ -3,7 +3,7 @@ package com.cookieshax.coursehelper.app.main
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cookieshax.coursehelper.feature.account.model.Account
+import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.SharingStarted

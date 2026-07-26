@@ -41,7 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.cookieshax.coursehelper.feature.account.model.Tag
+import com.cookieshax.coursehelper.core.database.entity.Tag
 import com.cookieshax.coursehelper.feature.account.ui.components.AccountSelectDialog
 import com.cookieshax.coursehelper.feature.account.ui.components.AccountWithTagsListContent
 import com.cookieshax.coursehelper.feature.account.ui.components.TagEditDialog

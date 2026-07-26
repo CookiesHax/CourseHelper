@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.network.ApiResult
-import com.cookieshax.coursehelper.feature.account.model.Account
+import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.feature.checkin.ui.items.ResultItem
 
 @Composable

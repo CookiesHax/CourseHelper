@@ -10,7 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.cookieshax.coursehelper.feature.account.model.Tag
+import com.cookieshax.coursehelper.core.database.entity.Tag
 import com.cookieshax.coursehelper.ui.items.IcTag
 
 @Composable

@@ -2,7 +2,7 @@ package com.cookieshax.coursehelper.core.database
 
 import androidx.room.TypeConverter
 import com.cookieshax.coursehelper.core.utils.StringUtils
-import com.cookieshax.coursehelper.feature.account.model.AccountStatus
+import com.cookieshax.coursehelper.core.database.model.AccountStatus
 import com.google.gson.JsonObject
 
 class Converters {

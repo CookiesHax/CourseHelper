@@ -2,11 +2,11 @@ package com.cookieshax.coursehelper.feature.account.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cookieshax.coursehelper.feature.account.model.Account
-import com.cookieshax.coursehelper.feature.account.model.AccountWithTags
+import com.cookieshax.coursehelper.core.database.entity.Account
+import com.cookieshax.coursehelper.core.database.model.AccountWithTags
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
-import com.cookieshax.coursehelper.feature.account.model.Tag
-import com.cookieshax.coursehelper.feature.account.model.TagWithAccounts
+import com.cookieshax.coursehelper.core.database.entity.Tag
+import com.cookieshax.coursehelper.core.database.model.TagWithAccounts
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 

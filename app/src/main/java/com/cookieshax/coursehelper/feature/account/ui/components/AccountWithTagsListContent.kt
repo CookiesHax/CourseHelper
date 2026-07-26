@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cookieshax.coursehelper.feature.account.model.AccountWithTags
+import com.cookieshax.coursehelper.core.database.model.AccountWithTags
 import com.cookieshax.coursehelper.feature.account.ui.items.AccountWithTagsItem
 import com.cookieshax.coursehelper.ui.items.Placeholder
 

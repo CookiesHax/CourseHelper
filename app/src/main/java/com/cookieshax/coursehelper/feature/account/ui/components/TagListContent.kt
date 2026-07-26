@@ -30,7 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.cookieshax.coursehelper.feature.account.model.TagWithAccounts
+import com.cookieshax.coursehelper.core.database.model.TagWithAccounts
 import com.cookieshax.coursehelper.feature.account.ui.items.TagItem
 import com.cookieshax.coursehelper.ui.items.Placeholder
 import kotlinx.coroutines.launch

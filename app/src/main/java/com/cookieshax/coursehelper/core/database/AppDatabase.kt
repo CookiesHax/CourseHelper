@@ -6,12 +6,12 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.cookieshax.coursehelper.app.CourseHelperApplication
-import com.cookieshax.coursehelper.feature.account.model.Account
-import com.cookieshax.coursehelper.feature.account.dao.AccountDao
+import com.cookieshax.coursehelper.core.database.entity.Account
+import com.cookieshax.coursehelper.core.database.dao.AccountDao
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
-import com.cookieshax.coursehelper.feature.account.model.AccountTagCrossRef
-import com.cookieshax.coursehelper.feature.account.model.Tag
-import com.cookieshax.coursehelper.feature.account.dao.TagDao
+import com.cookieshax.coursehelper.core.database.entity.AccountTagCrossRef
+import com.cookieshax.coursehelper.core.database.entity.Tag
+import com.cookieshax.coursehelper.core.database.dao.TagDao
 import com.cookieshax.coursehelper.core.network.CookieManager
 import kotlinx.coroutines.launch
 

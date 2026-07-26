@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.cookieshax.coursehelper.core.imageloader.CoilConfig
 import com.cookieshax.coursehelper.core.utils.maskedPhone
-import com.cookieshax.coursehelper.feature.account.model.Account
-import com.cookieshax.coursehelper.feature.account.model.AccountStatus
+import com.cookieshax.coursehelper.core.database.entity.Account
+import com.cookieshax.coursehelper.core.database.model.AccountStatus
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

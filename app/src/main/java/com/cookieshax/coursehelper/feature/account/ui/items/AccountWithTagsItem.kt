@@ -28,8 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.utils.maskedPhone
-import com.cookieshax.coursehelper.feature.account.model.Account
-import com.cookieshax.coursehelper.feature.account.model.Tag
+import com.cookieshax.coursehelper.core.database.entity.Account
+import com.cookieshax.coursehelper.core.database.entity.Tag
 import com.cookieshax.coursehelper.ui.items.IcTag
 import com.cookieshax.coursehelper.ui.items.IcTags
 
