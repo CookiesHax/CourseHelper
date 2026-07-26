@@ -44,7 +44,7 @@ sealed class ApiResult<out T> {
 }
 
 object NetworkClient {
-    private val context by lazy { CourseHelperApplication.context.applicationContext }
+    private val context by lazy { CourseHelperApplication.context }
 
     @Volatile
     private var cachedId: String? = null

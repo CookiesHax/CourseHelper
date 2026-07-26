@@ -20,7 +20,7 @@ object LocationService {
     private var isLocationStarted = false
 
     private val locationClient: LocationClient by lazy {
-        val context = CourseHelperApplication.context.applicationContext
+        val context = CourseHelperApplication.context
         LocationClient(context).apply {
             registerLocationListener(locationListener)
 

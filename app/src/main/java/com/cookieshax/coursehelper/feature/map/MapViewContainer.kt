@@ -41,8 +41,8 @@ fun MapViewContainer(
         mutableStateOf(SDKInitializer.isInitialized())
     }
     if (!isSdkInitialized) {
-        SDKInitializer.setAgreePrivacy(context.applicationContext, true)
-        SDKInitializer.initialize(context.applicationContext)
+        SDKInitializer.setAgreePrivacy(context, true)
+        SDKInitializer.initialize(context)
         isSdkInitialized = true
     }
 

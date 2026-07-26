@@ -15,7 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 object GeoCodeService {
     private val geoCoderInitializer: Unit by lazy {
         if (!SDKInitializer.isInitialized()) {
-            val context = CourseHelperApplication.context.applicationContext
+            val context = CourseHelperApplication.context
             SDKInitializer.setAgreePrivacy(context, true)
             SDKInitializer.initialize(context)
         }

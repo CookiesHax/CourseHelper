@@ -81,7 +81,7 @@ object CookieManager {
     // 用于上下文 Cookie 的 CookieJar
     private val contextCookieJar = ClearableCookieJar()
 
-    private val context by lazy { CourseHelperApplication.context.applicationContext }
+    private val context by lazy { CourseHelperApplication.context }
     private val applicationScope by lazy { CourseHelperApplication.applicationScope }
 
     // UID -> CookieJar
