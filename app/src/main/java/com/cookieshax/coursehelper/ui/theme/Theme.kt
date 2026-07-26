@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.rememberDynamicColorScheme
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -23,7 +24,7 @@ fun CourseHelperTheme(
     content: @Composable () -> Unit
 ) {
     val colorHex by (themeColor ?: remember {
-        kotlinx.coroutines.flow.MutableStateFlow("#769CDF")
+        MutableStateFlow("#769CDF")
     }).collectAsState()
 
     val colorScheme = when {
