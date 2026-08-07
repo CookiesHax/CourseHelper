@@ -6,6 +6,7 @@ import android.webkit.WebView
 import com.baidu.location.LocationClient
 import com.baidu.mapapi.SDKInitializer
 import com.cookieshax.coursehelper.BuildConfig
+import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.utils.FileUtils
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,9 @@ class CourseHelperApplication : Application() {
         // 异步初始化
         applicationScope.launch(Dispatchers.IO) {
             val settings = SettingsRepository(applicationContext)
+
+            ChaoXingAppInfo.packageName = settings.packageName.first()
+
             if (settings.clearCacheOnStartup.first()) {
                 val days = settings.cacheExpirationDays.first()
                 FileUtils.cleanupCache(applicationContext, days * 86400L)

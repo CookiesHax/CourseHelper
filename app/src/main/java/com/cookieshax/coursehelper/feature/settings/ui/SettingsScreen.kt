@@ -36,6 +36,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.components.Personalizatio
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.PackageNameDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.ThemeColorDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.UserAgentDialog
 
@@ -62,6 +63,7 @@ fun SettingsScreen(navController: NavController) {
     val showUnnecessaryCourses by viewModel.showUnnecessaryCourses.collectAsState()
     val maxImageCacheSize by viewModel.maxImageCacheSize.collectAsState()
     val userAgent by viewModel.userAgent.collectAsState()
+    val packageName by viewModel.packageName.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.refreshCacheSize()
@@ -120,6 +122,17 @@ fun SettingsScreen(navController: NavController) {
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setUserAgent(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
+        SettingsDialogOpen.PACKAGE_NAME -> {
+            PackageNameDialog(
+                currentPackageName = packageName,
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setPackageName(it)
                     viewModel.setActiveDialog(null)
                 }
             )
@@ -189,6 +202,7 @@ fun SettingsScreen(navController: NavController) {
                 // 网络
                 AppSection(
                     userAgent = userAgent,
+                    packageName = packageName,
                     loginEndpoint = loginEndpoint,
                     onOpenDialog = { viewModel.setActiveDialog(it) }
                 )

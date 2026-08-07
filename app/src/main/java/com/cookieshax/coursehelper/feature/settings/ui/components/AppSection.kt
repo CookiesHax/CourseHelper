@@ -16,6 +16,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeade
 @Composable
 fun AppSection(
     userAgent: String,
+    packageName: String,
     loginEndpoint: String,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
@@ -38,6 +39,11 @@ fun AppSection(
                 title = "User-Agent",
                 subtitle = userAgent.ifEmpty { "无" },
                 onClick = { onOpenDialog(SettingsDialogOpen.USER_AGENT) }
+            )
+            ClickableSettingItem(
+                title = "包名",
+                subtitle = packageName,
+                onClick = { onOpenDialog(SettingsDialogOpen.PACKAGE_NAME) }
             )
             SelectionSettingItem(
                 title = "密码登录端点",

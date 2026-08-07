@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import com.cookieshax.coursehelper.core.utils.FileUtils
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.imageloader.CoilConfig
+import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.network.NetworkClient
 import kotlinx.coroutines.flow.first
 
@@ -18,7 +19,8 @@ enum class SettingsDialogOpen {
     LOGIN_ENDPOINT,
     APP_THEME,
     THEME_COLOR,
-    USER_AGENT
+    USER_AGENT,
+    PACKAGE_NAME
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -79,6 +81,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _userAgent = MutableStateFlow("")
     val userAgent: StateFlow<String> = _userAgent.asStateFlow()
 
+    private val _packageName = MutableStateFlow("com.chaoxing.mobile")
+    val packageName: StateFlow<String> = _packageName.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Initial sync fetch of all values
@@ -95,6 +100,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _showUnnecessaryCourses.value = repository.showUnnecessaryCourses.first()
             _maxImageCacheSize.value = repository.maxImageCacheSize.first()
             _userAgent.value = repository.userAgent.first()
+            _packageName.value = repository.packageName.first()
 
             _isReady.value = true
 
@@ -141,6 +147,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 repository.userAgent.collect {
                     _userAgent.value = it
                     NetworkClient.clearUserAgentCache()
+                }
+            }
+            launch {
+                repository.packageName.collect {
+                    _packageName.value = it
+                    ChaoXingAppInfo.packageName = it
                 }
             }
         }
@@ -253,6 +265,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setUserAgent(ua: String) {
         viewModelScope.launch {
             repository.setUserAgent(ua)
+        }
+    }
+
+    fun setPackageName(packageName: String) {
+        viewModelScope.launch {
+            val name = packageName.ifBlank { "com.chaoxing.mobile" }
+            repository.setPackageName(name)
         }
     }
 }
