@@ -89,6 +89,7 @@ android {
 
         buildConfigField("String", "BAIDU_API_KEY", "\"$baiduApiKey\"")
         manifestPlaceholders["BAIDU_API_KEY"] = baiduApiKey
+        manifestPlaceholders["appName"] = "CourseHelper"
 
         // 按 ABI 拆分 APK
         splits {
@@ -116,15 +117,11 @@ android {
             )
         }
 
-        /*debug {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }*/
+        debug {
+            applicationIdSuffix = ".debug"
+            val baseAppName = defaultConfig.manifestPlaceholders["appName"]
+            manifestPlaceholders["appName"] = "${baseAppName}-Debug"
+        }
     }
 
     compileOptions {
