@@ -30,10 +30,16 @@ class SettingsRepository(private val context: Context) {
     private val showUnnecessaryCoursesKey = booleanPreferencesKey("show_unnecessary_courses")
     private val maxImageCacheSizeKey = intPreferencesKey("max_image_cache_size")
     private val userAgentKey = stringPreferencesKey("user_agent")
+    private val packageNameKey = stringPreferencesKey("package_name")
 
     val userAgent: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
             preferences[userAgentKey] ?: ""
+        }
+
+    val packageName: Flow<String> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[packageNameKey] ?: "com.chaoxing.mobile"
         }
 
     val isDynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -193,6 +199,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setUserAgent(userAgent: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[userAgentKey] = userAgent
+        }
+    }
+
+    suspend fun setPackageName(packageName: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[packageNameKey] = packageName
         }
     }
 }
