@@ -193,7 +193,7 @@ fun WebViewScreen(
 
         // 在主线程加载 URL
         val headers = mapOf(
-            "X-Requested-With" to ChaoXingAppInfo.PACKAGE_NAME,
+            "X-Requested-With" to ChaoXingAppInfo.packageName,
             "X-App-Version" to ChaoXingAppInfo.VERSION
         )
         viewModel.loadUrl(viewModel.currentUrl.value, headers)
