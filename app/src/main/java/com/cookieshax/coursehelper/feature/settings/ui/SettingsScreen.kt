@@ -29,9 +29,9 @@ import androidx.navigation.NavController
 import com.cookieshax.coursehelper.feature.settings.ui.components.AboutSection
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
-import com.cookieshax.coursehelper.feature.settings.ui.components.AppSection
+import com.cookieshax.coursehelper.feature.settings.ui.components.StorageSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.CourseSection
-import com.cookieshax.coursehelper.feature.settings.ui.components.WebSection
+import com.cookieshax.coursehelper.feature.settings.ui.components.AppSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.PersonalizationSection
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
@@ -187,14 +187,14 @@ fun SettingsScreen(navController: NavController) {
                 )
 
                 // 网络
-                WebSection(
+                AppSection(
                     userAgent = userAgent,
                     loginEndpoint = loginEndpoint,
                     onOpenDialog = { viewModel.setActiveDialog(it) }
                 )
 
                 // 应用
-                AppSection(
+                StorageSection(
                     clearCacheOnStartup = clearCacheOnStartup,
                     cacheExpirationDays = cacheExpirationDays,
                     cacheSize = cacheSize,
