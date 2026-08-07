@@ -19,7 +19,7 @@ object ApiManager {
     // 获取用户信息
     suspend fun getUserInfo(asUser: String? = AccountRepository.activeAccountIdFlow.value): ApiResult<String> {
         val deviceInfo = mapOf(
-            "app_name" to ChaoXingAppInfo.PACKAGE_NAME,
+            "app_name" to ChaoXingAppInfo.packageName,
             "app_ver" to ChaoXingAppInfo.VERSION,
             "board" to DeviceInfo.hardware,
             "brand" to DeviceInfo.brand,
