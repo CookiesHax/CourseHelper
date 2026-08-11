@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -16,19 +17,22 @@ fun getLocalProperty(key: String): String {
 }
 
 val baiduApiKey: String = getLocalProperty("BAIDU_API_KEY")
+val baiduApiKeyDebug: String =
+    getLocalProperty("BAIDU_API_KEY_DEBUG").let { it.ifEmpty { baiduApiKey } }
 
 if (baiduApiKey.isEmpty()) {
     logger.lifecycle(
         "WARNING: Baidu Maps API key not found. Location features will not work. " +
                 "Add your API key to local.properties:\n" +
                 "  BAIDU_API_KEY=your_api_key\n" +
+                "  BAIDU_API_KEY_DEBUG=your_debug_api_key (only used in debug mode)\n" +
                 "Get one at: https://lbsyun.baidu.com/"
     )
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -85,12 +89,9 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "BAIDU_API_KEY", "\"$baiduApiKey\"")
-        manifestPlaceholders["BAIDU_API_KEY"] = baiduApiKey
         manifestPlaceholders["appName"] = "CourseHelper"
-
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
         // 按 ABI 拆分 APK
         splits {
             abi {
@@ -115,12 +116,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["BAIDU_API_KEY"] = baiduApiKey
         }
 
         debug {
             applicationIdSuffix = ".debug"
             val baseAppName = defaultConfig.manifestPlaceholders["appName"]
             manifestPlaceholders["appName"] = "${baseAppName}-Debug"
+            manifestPlaceholders["BAIDU_API_KEY"] = baiduApiKeyDebug
         }
     }
 

@@ -27,7 +27,10 @@
 ```properties
 # 百度地图/定位 SDK 密钥
 BAIDU_API_KEY=你的百度API_KEY
+BAIDU_API_KEY_DEBUG=API_KEY (可选，仅用于调试)
 ```
+
+注：debug 版本包名与 release 不同，申请 ak 时请注意不要遗漏 `.debug` 后缀
 
 ### 2. 配置应用签名(可选)
 
