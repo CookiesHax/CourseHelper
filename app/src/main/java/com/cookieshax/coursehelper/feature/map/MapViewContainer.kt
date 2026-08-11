@@ -23,12 +23,12 @@ import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.search.core.PoiInfo
-import com.cookieshax.coursehelper.core.location.LocationService
+import com.cookieshax.coursehelper.core.location.LocationData
 
 @Composable
 fun MapViewContainer(
     modifier: Modifier = Modifier,
-    locationUpdates: LocationService.LocationData?,
+    locationUpdates: LocationData?,
     selectedPoi: PoiInfo? = null,
     longPressLocation: LatLng? = null,
     onLongPress: (LatLng) -> Unit = {},

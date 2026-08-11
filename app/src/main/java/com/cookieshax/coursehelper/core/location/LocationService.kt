@@ -10,14 +10,51 @@ import com.baidu.location.LocationClientOption
 import com.cookieshax.coursehelper.app.CourseHelperApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicInteger
 
-interface DisposableHandle {
+fun interface DisposableHandle {
     fun dispose()
 }
 
+data class LocationData(
+    val latitude: Double,
+    val longitude: Double,
+    val direction: Float
+)
+
 object LocationService {
+    private const val TAG = "LocationService"
+
+    private val lock = Any()
+    private var referenceCount = 0
+
+    @Volatile
     private var isLocationStarted = false
+
+    @Volatile
+    private var latitude = 0.0
+
+    @Volatile
+    private var longitude = 0.0
+
+    @Volatile
+    private var direction = 0.0f
+
+    @Volatile
+    private var isMock = false
+
+    @Volatile
+    private var mockLatitude = 0.0
+
+    @Volatile
+    private var mockLongitude = 0.0
+
+    private val _locationUpdates = MutableStateFlow<LocationData?>(null)
+    val locationUpdates: StateFlow<LocationData?> = _locationUpdates.asStateFlow()
+
+    private val _isMockLocation = MutableStateFlow(false)
+    val isMockLocationFlow: StateFlow<Boolean> = _isMockLocation.asStateFlow()
 
     private val locationClient: LocationClient by lazy {
         val context = CourseHelperApplication.context
@@ -36,76 +73,29 @@ object LocationService {
         }
     }
 
-    private var latitude = 0.0
-    private var longitude = 0.0
-    private var direction = 0.0f
-    private var isMock = false
-    private var mockLatitude = 0.0
-    private var mockLongitude = 0.0
-
-    private val referenceCount = AtomicInteger(0)
-    private val lock = Any()
-
-    private val _locationUpdates = MutableStateFlow<LocationData?>(null)
-    val locationUpdates: StateFlow<LocationData?> = _locationUpdates
-
-    private val _isMockLocation = MutableStateFlow(false)
-    val isMockLocationFlow: StateFlow<Boolean> = _isMockLocation
-
     private val locationListener = object : BDAbstractLocationListener() {
         override fun onReceiveLocation(location: BDLocation?) {
-            if (!isLocationStarted) return
-            if (location == null) return
-            Log.d("LocationService", "onReceiveLocation: $location")
-            location.let {
-                if (it.latitude != 0.0 || it.longitude != 0.0) {
-                    val newLatitude = it.latitude
-                    val newLongitude = it.longitude
-                    val newDirection = it.direction
+            if (!isLocationStarted || location == null) return
 
-                    latitude = newLatitude
-                    longitude = newLongitude
-                    direction = newDirection
+            Log.d(TAG, "onReceiveLocation: $location")
 
-                    if (!isMock) {
-                        _locationUpdates.value = LocationData(
-                            latitude = newLatitude,
-                            longitude = newLongitude,
-                            direction = newDirection
-                        )
-                    }
+            val lat = location.latitude
+            val lng = location.longitude
+
+            if (lat != 0.0 || lng != 0.0) {
+                val newDirection = location.direction
+
+                latitude = lat
+                longitude = lng
+                direction = newDirection
+
+                if (!isMock) {
+                    _locationUpdates.value = LocationData(
+                        latitude = lat,
+                        longitude = lng,
+                        direction = newDirection
+                    )
                 }
-            }
-        }
-    }
-
-    data class LocationData(
-        val latitude: Double,
-        val longitude: Double,
-        val direction: Float
-    )
-
-    private class LocationDisposableHandle(private val disposeAction: () -> Unit) :
-        DisposableHandle {
-        override fun dispose() {
-            disposeAction()
-        }
-    }
-
-    private fun startLocation() {
-        synchronized(lock) {
-            locationClient.start()
-            isLocationStarted = true
-            Log.d("LocationService", "Location started")
-        }
-    }
-
-    private fun stopLocation() {
-        synchronized(lock) {
-            if (isLocationStarted) {
-                locationClient.stop()
-                isLocationStarted = false
-                Log.d("LocationService", "Location stopped")
             }
         }
     }
@@ -113,48 +103,28 @@ object LocationService {
     fun register(): DisposableHandle {
         // 只在首次注册且定位未启动时启动定位
         synchronized(lock) {
-            val count = referenceCount.incrementAndGet()
-            Log.d("LocationService", "Register location service, reference count: $count")
+            val count = ++referenceCount
+            Log.d(TAG, "Register location service, reference count: $count")
 
             if (count == 1 && !isLocationStarted) {
                 startLocation()
             }
         }
 
-        return LocationDisposableHandle { unregister() }
-    }
-
-    private fun unregister() {
-        synchronized(lock) {
-            val count = referenceCount.decrementAndGet()
-            Log.d("LocationService", "Unregister location service, reference count: $count")
-
-            if (count <= 0) {
-                stopLocation()
-                if (count < 0) {
-                    referenceCount.set(0)
-                }
-            }
-        }
-    }
-
-    fun isLocationEnabled(context: Context): Boolean {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        return DisposableHandle { unregister() }
     }
 
     fun setMockLocation(latitude: Double, longitude: Double) {
-        _locationUpdates.value = LocationData(
-            latitude = latitude,
-            longitude = longitude,
-            direction = 0f
-        )
-
         isMock = true
         mockLatitude = latitude
         mockLongitude = longitude
 
         _isMockLocation.value = true
+        _locationUpdates.value = LocationData(
+            latitude = latitude,
+            longitude = longitude,
+            direction = 0f
+        )
     }
 
     fun clearMockLocation() {
@@ -186,6 +156,37 @@ object LocationService {
                 longitude = longitude,
                 direction = direction
             )
+        }
+    }
+
+    fun isLocationEnabled(context: Context): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    }
+
+    private fun startLocation() {
+        locationClient.start()
+        isLocationStarted = true
+        Log.d(TAG, "Location started")
+    }
+
+    private fun stopLocation() {
+        if (isLocationStarted) {
+            locationClient.stop()
+            isLocationStarted = false
+            Log.d(TAG, "Location stopped")
+        }
+    }
+
+    private fun unregister() = synchronized(lock) {
+        val count = --referenceCount
+        Log.d(TAG, "Unregister location service, reference count: $count")
+
+        if (count <= 0) {
+            stopLocation()
+            if (count < 0) {
+                referenceCount = 0
+            }
         }
     }
 }
