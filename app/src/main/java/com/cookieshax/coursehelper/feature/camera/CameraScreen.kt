@@ -88,52 +88,49 @@ fun CameraScreen(
 
     // 处理扫码结果
     LaunchedEffect(scanResult) {
-        scanResult?.let { result ->
-            if (result.startsWith("http://") || result.startsWith("https://")) {
-                if (result.contains("chaoxing") && result.contains("sign/") && preferOkHttpOverWebView) {
-                    val previousRoute = navController.previousBackStackEntry?.destination?.route
-                    // 如果上一个界面是签到界面则回传结果并返回
-                    if (previousRoute?.contains("CheckInRoute") == true) {
-                        navController.previousBackStackEntry?.savedStateHandle?.set(
-                            "scan_result",
-                            result
-                        )
-                        navController.popBackStack()
-                    } else {
-                        // 否则直接跳转到签到界面
-                        val uri = result.toUri()
-                        val taskId = uri.getQueryParameter("id")
-                        if (taskId != null) {
-                            navController.navigate(
-                                CheckInRoute(
-                                    url = result,
-                                    taskId = taskId
-                                )
-                            ) {
-                                popUpTo<CameraRoute> { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }
+        val result = scanResult ?: return@LaunchedEffect
+
+        if (!result.startsWith("http://") && !result.startsWith("https://")) {
+            Toast.makeText(context, "扫描结果: $result", Toast.LENGTH_LONG).show()
+            viewModel.clearScanResult()
+            return@LaunchedEffect
+        }
+
+        val previousRoute = navController.previousBackStackEntry?.destination?.route
+
+        if (result.contains("chaoxing") && result.contains("sign/") && preferOkHttpOverWebView) {
+            if (previousRoute?.contains("CheckInRoute") == true) {
+                // 回传给上一个签到界面
+                navController.previousBackStackEntry?.savedStateHandle?.set("scan_result", result)
+                navController.popBackStack()
+            } else {
+                // 跳转到新签到界面
+                val taskId = result.toUri().getQueryParameter("id")
+                if (taskId == null) {
+                    Toast.makeText(context, "缺少签到任务ID", Toast.LENGTH_LONG).show()
+                    viewModel.clearScanResult()
+                    return@LaunchedEffect
                 } else {
-                    val previousRoute = navController.previousBackStackEntry?.destination?.route
-                    if (previousRoute?.contains("WebViewRoute") == true) {
-                        navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("SHOULD_LOAD_URL", result)
-                        navController.popBackStack()
-                    } else {
-                        navController.navigate(WebViewRoute(result)) {
-                            popUpTo<CameraRoute> { inclusive = true }
-                            launchSingleTop = true
-                        }
+                    navController.navigate(CheckInRoute(url = result, taskId = taskId)) {
+                        popUpTo<CameraRoute> { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
-            } else {
-                Toast.makeText(context, "扫描结果: $result", Toast.LENGTH_LONG).show()
             }
             viewModel.clearScanResult()
+            return@LaunchedEffect
         }
+
+        if (previousRoute?.contains("WebViewRoute") == true) {
+            navController.previousBackStackEntry?.savedStateHandle?.set("SHOULD_LOAD_URL", result)
+            navController.popBackStack()
+        } else {
+            navController.navigate(WebViewRoute(result)) {
+                popUpTo<CameraRoute> { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+        viewModel.clearScanResult()
     }
 
     DisposableEffect(Unit) {
