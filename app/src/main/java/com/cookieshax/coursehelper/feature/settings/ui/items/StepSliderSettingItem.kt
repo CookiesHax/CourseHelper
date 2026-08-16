@@ -1,5 +1,6 @@
 package com.cookieshax.coursehelper.feature.settings.ui.items
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,12 +21,14 @@ fun StepSliderSettingItem(
     value: Int,
     steps: List<Int>,
     valueLabel: (Int) -> String,
-    onValueChange: (Int) -> Unit
+    onValueChange: (Int) -> Unit,
+    onClick: () -> Unit
 ) {
     val currentIndex = steps.indexOf(value).coerceAtLeast(0)
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
@@ -45,7 +48,7 @@ fun StepSliderSettingItem(
             onValueChange = { index ->
                 onValueChange(steps[index.roundToInt()])
             },
-            valueRange = 0f..(steps.size - 1).toFloat(),
+            valueRange = 0f .. (steps.size - 1).toFloat(),
             steps = if (steps.size > 2) steps.size - 2 else 0
         )
     }

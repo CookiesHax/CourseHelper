@@ -68,7 +68,8 @@ fun StorageSection(
                         else -> "$valMb MB"
                     }
                 },
-                onValueChange = onSetMaxImageCacheSize
+                onValueChange = onSetMaxImageCacheSize,
+                onClick = { onOpenDialog(SettingsDialogOpen.MAX_IMAGE_CACHE_SIZE) }
             )
             ClickableSettingItem(
                 title = "立即清理缓存",

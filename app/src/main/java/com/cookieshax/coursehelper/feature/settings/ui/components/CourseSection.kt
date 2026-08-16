@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.feature.settings.ui.items.BooleanSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
 import com.cookieshax.coursehelper.feature.settings.ui.items.SliderSettingItem
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 
 @Composable
 fun CourseSection(
@@ -28,7 +29,8 @@ fun CourseSection(
     onToggleOpencvForCaptcha: (Boolean) -> Unit,
     onSetMaxCaptchaRetries: (Int) -> Unit,
     onToggleShowUnsupportedTasks: (Boolean) -> Unit,
-    onToggleShowUnnecessaryCourses: (Boolean) -> Unit
+    onToggleShowUnnecessaryCourses: (Boolean) -> Unit,
+    onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -63,7 +65,8 @@ fun CourseSection(
                         title = "签到并发数",
                         value = checkInSemaphoreLimit,
                         range = 1 .. 16,
-                        onValueChange = onSetCheckInSemaphoreLimit
+                        onValueChange = onSetCheckInSemaphoreLimit,
+                        onClick = { onOpenDialog(SettingsDialogOpen.CHECK_IN_SEMAPHORE) }
                     )
                     BooleanSettingItem(
                         title = "使用OpenCV进行Captcha识别",
@@ -76,7 +79,8 @@ fun CourseSection(
                             title = "自动Captcha最大重试次数",
                             value = maxCaptchaRetries,
                             range = 1 .. 5,
-                            onValueChange = onSetMaxCaptchaRetries
+                            onValueChange = onSetMaxCaptchaRetries,
+                            onClick = { onOpenDialog(SettingsDialogOpen.MAX_CAPTCHA_RETRIES) }
                         )
                     }
                 }

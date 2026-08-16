@@ -1,5 +1,6 @@
 package com.cookieshax.coursehelper.feature.settings.ui.items
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,11 +20,13 @@ fun SliderSettingItem(
     title: String,
     value: Int,
     range: IntRange,
-    onValueChange: (Int) -> Unit
+    onValueChange: (Int) -> Unit,
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
@@ -41,7 +44,7 @@ fun SliderSettingItem(
         Slider(
             value = value.toFloat(),
             onValueChange = { onValueChange(it.roundToInt()) },
-            valueRange = range.first.toFloat()..range.last.toFloat(),
+            valueRange = range.first.toFloat() .. range.last.toFloat(),
             steps = if (range.last - range.first > 1) range.last - range.first - 1 else 0
         )
     }
