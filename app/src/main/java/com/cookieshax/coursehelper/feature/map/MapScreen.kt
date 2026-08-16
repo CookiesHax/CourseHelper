@@ -47,6 +47,7 @@ import com.baidu.mapapi.map.MyLocationConfiguration
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.search.core.PoiInfo
 import com.cookieshax.coursehelper.core.location.LocationService
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.ui.items.SearchInput
 import com.cookieshax.coursehelper.ui.items.SearchTrigger
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -110,8 +111,7 @@ fun MapScreen(
 
         LaunchedEffect(Unit) {
             if (!LocationService.isLocationEnabled(context)) {
-                Toast.makeText(context, "请开启位置信息权限以使用定位功能", Toast.LENGTH_LONG)
-                    .show()
+                "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
             }
         }
 

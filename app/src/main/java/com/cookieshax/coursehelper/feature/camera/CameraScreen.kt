@@ -37,6 +37,7 @@ import com.cookieshax.coursehelper.app.navigation.CameraRoute
 import com.cookieshax.coursehelper.app.navigation.CheckInRoute
 import com.cookieshax.coursehelper.app.navigation.WebViewRoute
 import com.cookieshax.coursehelper.core.permission.PermissionManager
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -91,7 +92,7 @@ fun CameraScreen(
         val result = scanResult ?: return@LaunchedEffect
 
         if (!result.startsWith("http://") && !result.startsWith("https://")) {
-            Toast.makeText(context, "扫描结果: $result", Toast.LENGTH_LONG).show()
+            "扫描结果: $result".showToast(Toast.LENGTH_LONG)
             viewModel.clearScanResult()
             return@LaunchedEffect
         }
@@ -107,7 +108,7 @@ fun CameraScreen(
                 // 跳转到新签到界面
                 val taskId = result.toUri().getQueryParameter("id")
                 if (taskId == null) {
-                    Toast.makeText(context, "缺少签到任务ID", Toast.LENGTH_LONG).show()
+                    "缺少签到任务ID".showToast(Toast.LENGTH_LONG)
                     viewModel.clearScanResult()
                     return@LaunchedEffect
                 } else {
@@ -151,7 +152,7 @@ fun CameraScreen(
                     },
                     onError = { e ->
                         Log.e("CameraScreen", "相册扫码失败", e)
-                        Toast.makeText(context, "扫码失败", Toast.LENGTH_SHORT).show()
+                        "扫码失败".showToast()
                     }
                 )
             }

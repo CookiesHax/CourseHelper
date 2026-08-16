@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.rememberCoroutineScope
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.checkin.model.CheckInParams
 import com.cookieshax.coursehelper.feature.checkin.model.LocationCheckInStrategy
 import com.cookieshax.coursehelper.feature.checkin.ui.CheckInState
@@ -95,7 +96,7 @@ fun LocationTrigger(
 
     LaunchedEffect(Unit) {
         if (!LocationService.isLocationEnabled(context)) {
-            Toast.makeText(context, "请开启位置信息权限以使用定位功能", Toast.LENGTH_LONG).show()
+            "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
         }
     }
 
@@ -131,11 +132,7 @@ fun LocationTrigger(
 
                             if (currentLat == null || currentLng == null) {
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        context,
-                                        "获取位置信息失败，请重试或手动模拟位置",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                    "获取位置信息失败，请重试或手动模拟位置".showToast(Toast.LENGTH_LONG)
                                 }
                                 return@launch
                             }

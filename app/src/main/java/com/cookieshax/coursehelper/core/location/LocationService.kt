@@ -11,7 +11,6 @@ import com.cookieshax.coursehelper.app.CourseHelperApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.atomic.AtomicInteger
 
 fun interface DisposableHandle {
     fun dispose()

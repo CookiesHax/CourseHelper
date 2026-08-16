@@ -1,6 +1,5 @@
 package com.cookieshax.coursehelper.feature.login
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cookieshax.coursehelper.core.network.ApiResult
+import com.cookieshax.coursehelper.core.utils.showToast
 import kotlinx.coroutines.launch
 
 @Composable
@@ -113,10 +113,13 @@ fun VerificationCodeLoginScreen(
                     onClick = {
                         viewModel.sendVerificationCode { success, message ->
                             if (success) {
-                                Toast.makeText(context, "验证码已发送", Toast.LENGTH_SHORT).show()
+                                "验证码已发送".showToast()
                             } else {
-                                Toast.makeText(context, message ?: "发送失败", Toast.LENGTH_SHORT)
-                                    .show()
+                                if (!message.isNullOrEmpty()) {
+                                    message.showToast()
+                                } else {
+                                    "发送失败".showToast()
+                                }
                             }
                         }
                     },

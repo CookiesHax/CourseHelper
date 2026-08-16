@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.cookieshax.coursehelper.app.navigation.CameraRoute
 import com.cookieshax.coursehelper.core.location.GeoCodeService
 import com.cookieshax.coursehelper.core.location.LocationService
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.checkin.model.CheckInParams
 import com.cookieshax.coursehelper.feature.checkin.model.QrCodeCheckInStrategy
 import com.cookieshax.coursehelper.feature.checkin.ui.CheckInState
@@ -104,7 +105,7 @@ fun QrCodeTrigger(
 
     LaunchedEffect(Unit) {
         if (isNeedLocation && !LocationService.isLocationEnabled(context)) {
-            Toast.makeText(context, "请开启位置信息权限以使用定位功能", Toast.LENGTH_LONG).show()
+            "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
         }
     }
 
@@ -129,11 +130,7 @@ fun QrCodeTrigger(
 
                     if (currentLat == null || currentLng == null) {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "未能获取到有效的定位信息，请稍后再试",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            "未能获取到有效的定位信息，请稍后再试".showToast()
                         }
                         return@LaunchedEffect
                     }
