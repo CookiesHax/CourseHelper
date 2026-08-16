@@ -37,6 +37,8 @@ import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.PackageNameDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.SliderEditDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.StepSliderEditDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.ThemeColorDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.UserAgentDialog
 
@@ -138,6 +140,52 @@ fun SettingsScreen(navController: NavController) {
             )
         }
 
+        SettingsDialogOpen.CHECK_IN_SEMAPHORE -> {
+            SliderEditDialog(
+                title = "签到并发数",
+                value = checkInSemaphoreLimit,
+                range = 1..16,
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setCheckInSemaphoreLimit(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
+        SettingsDialogOpen.MAX_CAPTCHA_RETRIES -> {
+            SliderEditDialog(
+                title = "自动Captcha最大重试次数",
+                value = maxCaptchaRetries,
+                range = 1..5,
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setMaxCaptchaRetries(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
+        SettingsDialogOpen.MAX_IMAGE_CACHE_SIZE -> {
+            StepSliderEditDialog(
+                title = "图片缓存上限",
+                value = maxImageCacheSize,
+                steps = listOf(0, 8, 16, 32, 64, 128, 256, -1),
+                valueLabel = { valMb ->
+                    when (valMb) {
+                        -1 -> "无限制"
+                        0 -> "不缓存"
+                        else -> "$valMb MB"
+                    }
+                },
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setMaxImageCacheSize(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
         else -> {}
     }
 
@@ -196,7 +244,8 @@ fun SettingsScreen(navController: NavController) {
                     onToggleOpencvForCaptcha = { viewModel.toggleOpencvForCaptcha(it) },
                     onSetMaxCaptchaRetries = { viewModel.setMaxCaptchaRetries(it) },
                     onToggleShowUnsupportedTasks = { viewModel.toggleShowUnsupportedTasks(it) },
-                    onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) }
+                    onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) },
+                    onOpenDialog = { viewModel.setActiveDialog(it) }
                 )
 
                 // 网络

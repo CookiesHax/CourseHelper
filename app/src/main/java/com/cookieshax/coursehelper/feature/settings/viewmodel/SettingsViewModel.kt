@@ -20,7 +20,10 @@ enum class SettingsDialogOpen {
     APP_THEME,
     THEME_COLOR,
     USER_AGENT,
-    PACKAGE_NAME
+    PACKAGE_NAME,
+    CHECK_IN_SEMAPHORE,
+    MAX_CAPTCHA_RETRIES,
+    MAX_IMAGE_CACHE_SIZE
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
