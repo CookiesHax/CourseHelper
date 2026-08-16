@@ -48,7 +48,7 @@ APK 进行签名。
 
 ## 许可与免责声明
 
-### 1. 知识共享许可协议
+### 1. 许可证
 
 本项目采用 [GNU General Public License v3.0 (GPL-3.0)](https://www.gnu.org/licenses/gpl-3.0.html)
 协议开源。
