@@ -17,25 +17,25 @@ object DeviceInfo {
         UUID.randomUUID().toString()
     }
 
-    val buildId: String get() = Build.ID
+    val buildId: String inline get() = Build.ID
 
-    val deviceName: String get() = Build.DEVICE
+    val deviceName: String inline get() = Build.DEVICE
 
-    val manufacturer: String get() = Build.MANUFACTURER
+    val manufacturer: String inline get() = Build.MANUFACTURER
 
-    val model: String get() = Build.MODEL
+    val model: String inline get() = Build.MODEL
 
-    val osVersionName: String get() = Build.VERSION.RELEASE
+    val osVersionName: String inline get() = Build.VERSION.RELEASE
 
-    val brand: String get() = Build.BRAND
+    val brand: String inline get() = Build.BRAND
 
-    val hardware: String get() = Build.HARDWARE
+    val hardware: String inline get() = Build.HARDWARE
 
-    val language: String get() = Locale.getDefault().language
+    val language: String inline get() = Locale.getDefault().language
 
-    val fingerprint: String get() = Build.FINGERPRINT
+    val fingerprint: String inline get() = Build.FINGERPRINT
 
-    val bootloader: String get() = Build.BOOTLOADER
+    val bootloader: String inline get() = Build.BOOTLOADER
 
     val locale: Locale get() = Locale.getDefault()
 
@@ -43,52 +43,35 @@ object DeviceInfo {
 
     val cpuArch: String get() = Build.SUPPORTED_ABIS.joinToString(",")
 
-    val dpi: String
-        get() {
-            val displayMetrics = DisplayMetrics()
-            val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                windowManager?.currentWindowMetrics?.let {
-                    val bounds = it.bounds
-                    displayMetrics.apply {
-                        widthPixels = bounds.width()
-                        heightPixels = bounds.height()
-                    }
-                }
-            }
-            return displayMetrics.densityDpi.toString()
-        }
+    val dpi: String get() = context.resources.displayMetrics.toString()
 
     val resolution: String
         get() {
-            val displayMetrics = DisplayMetrics()
             val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                windowManager?.currentWindowMetrics?.let {
-                    val bounds = it.bounds
-                    displayMetrics.apply {
-                        widthPixels = bounds.width()
-                        heightPixels = bounds.height()
-                    }
-                }
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val bounds = windowManager?.currentWindowMetrics?.bounds
+                "${bounds?.width() ?: 0}*${bounds?.height() ?: 0}"
+            } else {
+                val metrics = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                windowManager?.defaultDisplay?.getMetrics(metrics)
+                "${metrics.widthPixels}*${metrics.heightPixels}"
             }
-            return "${displayMetrics.widthPixels}*${displayMetrics.heightPixels}"
         }
 
     val mediaDrmId: String
         get() {
             return try {
-                val widevineDrm = MediaDrm(
-                    UUID(-0x121074568629b532L, -0x5c37e5afc3bafe9L)
-                )
+                val widevineDrm = MediaDrm(UUID(-0x121074568629b532L, -0x5c37e5afc3bafe9L))
                 val id = widevineDrm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+                widevineDrm.close()
                 id.let { UUID.nameUUIDFromBytes(it).toString() }
             } catch (_: Exception) {
                 ""
             }
         }
 
-    val osName: String get() = Build.TYPE
+    val osName: String inline get() = Build.TYPE
 
     val oaid: String
         get() {
