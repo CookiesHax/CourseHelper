@@ -1,7 +1,6 @@
 package com.cookieshax.coursehelper.feature.webview
 
 import android.util.Log
-import android.widget.Toast
 import androidx.navigation.NavController
 import com.cookieshax.coursehelper.app.navigation.CameraRoute
 import com.cookieshax.coursehelper.app.navigation.CourseTaskRoute
@@ -11,6 +10,7 @@ import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
 import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
 import kotlinx.coroutines.CoroutineScope
@@ -231,11 +231,7 @@ class JsBridgeHandlers(
         val params = JSONObject(paramsJson)
         val message = params.optString("message", "")
         if (message.isNotBlank()) {
-            Toast.makeText(
-                jsBridgeInterface.webView?.context,
-                message,
-                Toast.LENGTH_SHORT
-            ).show()
+            message.showToast()
         }
     }
 

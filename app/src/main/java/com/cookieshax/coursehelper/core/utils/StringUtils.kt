@@ -1,5 +1,7 @@
 package com.cookieshax.coursehelper.core.utils
 
+import android.widget.Toast
+import com.cookieshax.coursehelper.app.CourseHelperApplication
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 
@@ -41,6 +43,10 @@ val String.maskedPhone: String
     } else {
         this
     }
+
+fun String.showToast(duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(CourseHelperApplication.context, this, duration).show()
+}
 
 fun JsonObject.getStringOrEmpty(key: String): String =
     if (has(key) && get(key).isJsonPrimitive) get(key).asString else ""

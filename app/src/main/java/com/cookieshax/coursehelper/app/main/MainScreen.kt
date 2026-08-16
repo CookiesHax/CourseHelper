@@ -1,7 +1,6 @@
 package com.cookieshax.coursehelper.app.main
 
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -61,6 +60,7 @@ import com.cookieshax.coursehelper.app.navigation.CameraRoute
 import com.cookieshax.coursehelper.app.navigation.LoginRoute
 import com.cookieshax.coursehelper.app.navigation.SettingsRoute
 import com.cookieshax.coursehelper.app.navigation.TagManagerRoute
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.account.ui.components.AccountTabContent
 import com.cookieshax.coursehelper.feature.course.ui.CourseTabContent
@@ -80,7 +80,6 @@ enum class MainTab {
 @Composable
 fun MainScreen(navController: NavController) {
     val mainViewModel: MainViewModel = viewModel()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val activeAccountId by mainViewModel.activeAccountId.collectAsState()
@@ -110,7 +109,7 @@ fun MainScreen(navController: NavController) {
         var hasShownToast = false
         AccountRepository.expirationEvent.collect {
             if (!hasShownToast) {
-                Toast.makeText(context, "检测到有账号已失效，请及时处理", Toast.LENGTH_SHORT).show()
+                "检测到有账号已失效，请及时处理".showToast()
                 hasShownToast = true
             }
         }

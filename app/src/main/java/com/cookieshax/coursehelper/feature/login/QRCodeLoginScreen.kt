@@ -2,7 +2,6 @@ package com.cookieshax.coursehelper.feature.login
 
 import android.graphics.BitmapFactory
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -138,8 +138,7 @@ fun QRCodeLoginScreen(
                             Log.e("QRCode", "检查二维码状态失败: ${result.message}")
                             // 如果连续多次网络错误
                             if (checkCount >= maxCheckCount) {
-                                Toast.makeText(context, "网络错误，请重试", Toast.LENGTH_SHORT)
-                                    .show()
+                                "网络错误，请重试".showToast()
                             }
                         }
                     }

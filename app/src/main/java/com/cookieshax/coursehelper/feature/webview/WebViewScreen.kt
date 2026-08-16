@@ -45,6 +45,7 @@ import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.permission.PermissionManager
 import com.cookieshax.coursehelper.core.utils.FileUtils
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.camera.EXTRA_IMAGE_URI
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -158,14 +159,13 @@ fun WebViewScreen(
         }
 
         if (!LocationService.isLocationEnabled(context)) {
-            Toast.makeText(context, "请开启位置信息权限以使用定位功能", Toast.LENGTH_LONG).show()
+            "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
         }
     }
 
     LaunchedEffect(Unit) {
         if (!LocationService.isLocationEnabled(context)) {
-            Toast.makeText(context, "请开启位置信息权限以使用定位功能", Toast.LENGTH_LONG)
-                .show()
+            "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
         }
     }
 

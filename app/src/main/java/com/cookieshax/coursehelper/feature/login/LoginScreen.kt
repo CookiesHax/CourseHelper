@@ -2,7 +2,6 @@ package com.cookieshax.coursehelper.feature.login
 
 import android.content.Context
 import kotlinx.serialization.Serializable
-import android.widget.Toast
 import androidx.annotation.Keep
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +28,7 @@ import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.network.CookieManager
 import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.showToast
 
 @Keep
 @Serializable
@@ -62,27 +62,15 @@ suspend fun handlePostLoginSuccess(
                     AccountRepository.addOrUpdateAccount(newAccount)
                     AccountRepository.switchActiveAccount(newAccount.uid)
 
-                    Toast.makeText(
-                        context,
-                        "「${newAccount.name}」登录成功",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "「${newAccount.name}」登录成功".showToast()
                     onBack()
                     return true
                 } else {
-                    Toast.makeText(
-                        context,
-                        "解析用户信息失败：缺少msg字段",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "解析用户信息失败：缺少msg字段".showToast()
                     return false
                 }
             } else {
-                Toast.makeText(
-                    context,
-                    "解析用户信息失败：userInfo为空",
-                    Toast.LENGTH_SHORT
-                ).show()
+                "解析用户信息失败：userInfo为空".showToast()
                 return false
             }
         }
