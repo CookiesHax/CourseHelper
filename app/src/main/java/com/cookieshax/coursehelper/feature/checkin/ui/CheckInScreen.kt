@@ -1,15 +1,22 @@
 package com.cookieshax.coursehelper.feature.checkin.ui
 
+import android.content.ClipData
 import androidx.annotation.Keep
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,8 +36,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -38,6 +49,7 @@ import com.cookieshax.coursehelper.app.navigation.MapRoute
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
+import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.checkin.ui.components.CheckInLayout
 import com.cookieshax.coursehelper.feature.checkin.ui.components.code.CodeInputComponent
@@ -51,6 +63,7 @@ import com.cookieshax.coursehelper.feature.checkin.ui.components.qrcode.QrCodeTr
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.ui.items.Placeholder
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 sealed class CheckInType {
@@ -115,6 +128,8 @@ fun CheckInScreen(
     val checkInType = remember { mutableStateOf<CheckInType?>(null) }
     val checkInState = remember { mutableStateOf(CheckInState()) }
     val showPhotoDialog = remember { mutableStateOf(false) }
+    val rawTaskInfo = remember { mutableStateOf("") }
+    val showInfoDialog = remember { mutableStateOf(false) }
 
     val checkInViewModel: CheckInViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
@@ -123,6 +138,7 @@ fun CheckInScreen(
     LaunchedEffect(taskId) {
         when (val response = ApiManager.getCheckInTaskInfo(taskId)) {
             is ApiResult.Success -> {
+                rawTaskInfo.value = response.data
                 val dataObject = JSONObject(response.data).optJSONObject("data")
                 if (dataObject != null) {
                     // 兼容字符串形式的经纬度
@@ -187,6 +203,7 @@ fun CheckInScreen(
             }
 
             is ApiResult.Error -> {
+                rawTaskInfo.value = "Error: ${response.message}"
                 checkInState.value = checkInState.value.copy(otherId = "-1")
             }
         }
@@ -219,6 +236,14 @@ fun CheckInScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "返回"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showInfoDialog.value = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "任务信息"
                             )
                         }
                     }
@@ -402,6 +427,65 @@ fun CheckInScreen(
                     Text("点击账号以打开相机进行拍照")
                     Text("或点击图标来通过相册选取器上传图片")
                     Text("上传成功之后 对应账户的图标会变为绿色")
+                }
+            }
+        )
+    }
+
+    if (showInfoDialog.value) {
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
+        val formattedJson = remember(rawTaskInfo.value) {
+            try {
+                JSONObject(rawTaskInfo.value).toString(4)
+            } catch (_: Exception) {
+                rawTaskInfo.value
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showInfoDialog.value = false },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog.value = false }) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        val clipData = ClipData.newPlainText("Task Info", formattedJson)
+                        clipboard.setClipEntry(ClipEntry(clipData))
+                        "已复制到剪贴板".showToast()
+                    }
+                }) {
+                    Text("复制")
+                }
+            },
+            title = { Text("任务详情") },
+            text = {
+                val vScrollState = rememberScrollState()
+                val hScrollState = rememberScrollState()
+
+                Surface(
+                    color = Color(0xFF1E1E1E),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .verticalScroll(vScrollState)
+                            .horizontalScroll(hScrollState)
+                    ) {
+                        SelectionContainer {
+                            Text(
+                                text = formattedJson,
+                                color = Color(0xFFD4D4D4),
+                                style = MaterialTheme.typography.bodySmall,
+                                softWrap = false // 禁用自动换行以支持横向滚动
+                            )
+                        }
+                    }
                 }
             }
         )
