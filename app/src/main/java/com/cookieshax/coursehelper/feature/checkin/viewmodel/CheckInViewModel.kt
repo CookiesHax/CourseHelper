@@ -1,7 +1,9 @@
 package com.cookieshax.coursehelper.feature.checkin.viewmodel
 
 import android.app.Application
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
+import com.cookieshax.coursehelper.app.CourseHelperApplication
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.database.entity.Account
@@ -153,7 +155,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 val refreshResult =
                     currentRequest.strategy.execute(currentRequest.uid, currentParams, faceCache)
                 if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_")[1]
+                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
                     currentRequest.params = currentParams.copy(enc2 = newEnc2)
                 }
             }
@@ -222,7 +224,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 && result is ApiResult.Success
                 && result.data.startsWith("validate_")
             ) {
-                val enc2 = result.data.split("_")[1]
+                val enc2 = result.data.split("_").getOrNull(1) ?: ""
                 currentParams = currentParams.copy(enc2 = enc2)
                 return solveCaptchaAndRetry(
                     uid,
@@ -270,7 +272,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
             ) {
                 val refreshResult = strategy.execute(uid, currentParams, faceCache)
                 if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_")[1]
+                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
                     currentParams = currentParams.copy(enc2 = newEnc2)
                 }
             }
@@ -280,11 +282,17 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 return ApiResult.Error("验证码加载失败: ${captcha.errorMessage}")
             }
 
-            val x = CaptchaSolver.calculateCaptchaOffset(captcha)
-            val (res, nextCaptcha) = captcha.submit(x)
-            captcha = nextCaptcha
-            validate = res ?: ""
-            counter++
+            try {
+                val x = CaptchaSolver.calculateCaptchaOffset(captcha)
+                val (res, nextCaptcha) = captcha.submit(x)
+                captcha = nextCaptcha
+                validate = res ?: ""
+                counter++
+            } catch (e: Exception) {
+                Toast.makeText(CourseHelperApplication.context, e.message, Toast.LENGTH_SHORT)
+                    .show()
+                break
+            }
         }
 
         // 手动打码
@@ -293,7 +301,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
             if (currentParams is CheckInParams.QrCode && currentParams.enc2.isBlank()) {
                 val refreshResult = strategy.execute(uid, currentParams, faceCache)
                 if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_")[1]
+                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
                     currentParams = currentParams.copy(enc2 = newEnc2)
                 }
             }
