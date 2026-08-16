@@ -238,7 +238,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setActiveDialog(dialog: SettingsDialogOpen?) {
-        _activeDialog.value = dialog
+        if (dialog == null || _activeDialog.value == null) {
+            _activeDialog.value = dialog
+        }
     }
 
     fun clearCache() {
