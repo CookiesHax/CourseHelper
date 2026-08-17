@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -34,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,7 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -60,6 +62,7 @@ import com.cookieshax.coursehelper.app.navigation.CameraRoute
 import com.cookieshax.coursehelper.app.navigation.LoginRoute
 import com.cookieshax.coursehelper.app.navigation.SettingsRoute
 import com.cookieshax.coursehelper.app.navigation.TagManagerRoute
+import com.cookieshax.coursehelper.app.navigation.WebViewRoute
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.account.ui.components.AccountTabContent
@@ -91,6 +94,7 @@ fun MainScreen(navController: NavController) {
 
     var showLoginMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showInviteCodeDialog by remember { mutableStateOf(false) }
 
     var isSelectionMode by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable { mutableStateOf(setOf<String>()) }
@@ -228,6 +232,13 @@ fun MainScreen(navController: NavController) {
                                                     navController.navigate(LoginRoute(LoginType.QRCODE)) {
                                                         launchSingleTop = true
                                                     }
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("添加课程") },
+                                                onClick = {
+                                                    showLoginMenu = false
+                                                    showInviteCodeDialog = true
                                                 }
                                             )
                                         }
@@ -428,6 +439,47 @@ fun MainScreen(navController: NavController) {
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("取消")
+                        }
+                    }
+                )
+            }
+
+            if (showInviteCodeDialog) {
+                var text by remember { mutableStateOf("") }
+                AlertDialog(
+                    onDismissRequest = { showInviteCodeDialog = false },
+                    title = { Text("输入邀请码") },
+                    text = {
+                        Column {
+                            OutlinedTextField(
+                                value = text,
+                                onValueChange = {
+                                    if (it.all { char -> char.isDigit() }) text = it
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("邀请码") },
+                                placeholder = { Text("输入邀请码...") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            if (activeAccountId != null) {
+                                navController.navigate(
+                                    WebViewRoute(
+                                        "https://mooc1-api.chaoxing.com/teachingClassPhoneManage/phone/toParticipateCls?inviteCode=$text"
+                                    )
+                                )
+                            }
+                            showInviteCodeDialog = false
+                        }) {
+                            Text("确定")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showInviteCodeDialog = false }) {
                             Text("取消")
                         }
                     }
