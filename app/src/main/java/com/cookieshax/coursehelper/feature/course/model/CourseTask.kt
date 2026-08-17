@@ -18,7 +18,8 @@ data class CourseTask(
     val id: Long,
     val status: Int,
     val nameFour: String, // 剩余时间
-    val otherId: String = "" // 签到类型
+    val otherId: String = "", // 签到类型
+    val idCode: String = ""
 ) {
     companion object {
         // 解析API响应中的任务列表
@@ -65,13 +66,27 @@ data class CourseTask(
                 val dataObj = jsonObject.get("data")?.asJsonObject ?: return tasks
                 val activeList = dataObj.getAsJsonArray("activeList") ?: return tasks
 
-                val webDataMap = mutableMapOf<Long, Pair<String, String>>()
+                // Map of taskId to (otherId, nameFour, idCode)
+                val webDataMap = mutableMapOf<Long, Triple<String, String, String>>()
                 for (i in 0 until activeList.size()) {
                     val taskObj = activeList[i].asJsonObject
                     val id = taskObj.get("id")?.asLong ?: 0L
                     val otherId = taskObj.get("otherId")?.asString ?: ""
                     val nameFour = taskObj.get("nameFour")?.asString ?: ""
-                    if (id != 0L) webDataMap[id] = Pair(otherId, nameFour)
+
+                    // 解析 content 字符串中的 idCode
+                    var idCode = ""
+                    val contentStr = taskObj.get("content")?.asString
+                    if (!contentStr.isNullOrBlank()) {
+                        try {
+                            val contentJson = StringUtils.parseJson(contentStr)?.asJsonObject
+                            idCode = contentJson?.get("idCode")?.asString ?: ""
+                        } catch (_: Exception) {
+                            // 忽略 content 解析失败的情况
+                        }
+                    }
+
+                    if (id != 0L) webDataMap[id] = Triple(otherId, nameFour, idCode)
                 }
 
                 // 如果该任务在 Map 中有值 则补全
@@ -79,7 +94,11 @@ data class CourseTask(
                     val webData = webDataMap[task.id]
                     if (webData != null) {
                         val updatedNameFour = task.nameFour.ifEmpty { webData.second }
-                        task.copy(otherId = webData.first, nameFour = updatedNameFour)
+                        task.copy(
+                            otherId = webData.first,
+                            nameFour = updatedNameFour,
+                            idCode = webData.third
+                        )
                     } else {
                         task
                     }
@@ -91,7 +110,8 @@ data class CourseTask(
         }
 
         fun isUnsupportedTask(task: CourseTask): Boolean {
-            return task.url.isBlank() || task.activeType == 45 // 通知
+            if (task.activeType == 45) return false // 通知已支持
+            return task.url.isBlank()
         }
 
         // 将活动类型转换为文本描述

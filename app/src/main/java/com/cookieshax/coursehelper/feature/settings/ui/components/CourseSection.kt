@@ -87,7 +87,7 @@ fun CourseSection(
             }
             BooleanSettingItem(
                 title = "展示不受支持的任务活动",
-                subtitle = "启用后将展示不受支持的任务活动，如通知",
+                subtitle = "启用后将展示不受支持的任务活动",
                 checked = showUnsupportedTasks,
                 onCheckedChange = onToggleShowUnsupportedTasks
             )

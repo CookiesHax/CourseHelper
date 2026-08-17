@@ -46,6 +46,9 @@ import com.cookieshax.coursehelper.app.navigation.CheckInRoute
 import com.cookieshax.coursehelper.app.navigation.MapRoute
 import com.cookieshax.coursehelper.app.navigation.WebViewRoute
 import com.cookieshax.coursehelper.core.location.LocationService
+import com.cookieshax.coursehelper.core.network.ApiManager
+import com.cookieshax.coursehelper.core.network.ApiResult
+import com.cookieshax.coursehelper.core.utils.StringUtils
 import com.cookieshax.coursehelper.feature.course.ui.items.TaskItem
 import com.cookieshax.coursehelper.feature.course.model.CourseTask
 import com.cookieshax.coursehelper.feature.course.viewmodel.CourseTaskViewModel
@@ -185,6 +188,26 @@ fun CourseTaskListScreen(
                                                         courseId = courseId
                                                     )
                                                 )
+                                            } else if (clickedTask.activeType == 45) {
+                                                scope.launch {
+                                                    when (val result = ApiManager.getNotice(clickedTask)) {
+                                                        is ApiResult.Success -> {
+                                                            val json = StringUtils.parseJson(result.data)
+                                                            val shareUrl = json?.getAsJsonObject("msg")?.get("shareUrl")?.asString
+                                                            if (!shareUrl.isNullOrEmpty()) {
+                                                                navController.navigate(WebViewRoute(shareUrl)) {
+                                                                    launchSingleTop = true
+                                                                }
+                                                            } else {
+                                                                snackbarHostState.showSnackbar("获取通知详情失败：未找到链接")
+                                                            }
+                                                        }
+
+                                                        is ApiResult.Error -> {
+                                                            snackbarHostState.showSnackbar("获取通知详情失败：${result.message}")
+                                                        }
+                                                    }
+                                                }
                                             } else {
                                                 if (CourseTask.isUnsupportedTask(task)) {
                                                     scope.launch {

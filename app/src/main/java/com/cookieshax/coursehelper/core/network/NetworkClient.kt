@@ -110,7 +110,7 @@ object NetworkClient {
     // 公共请求方法
     suspend fun get(
         url: String,
-        params: Map<String, String>? = null,
+        params: Map<String, Any?>? = null,
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
@@ -120,7 +120,9 @@ object NetworkClient {
                 url.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid URL: $url")
             val newUrlBuilder = existingUrl.newBuilder()
             params.forEach { (key, value) ->
-                newUrlBuilder.addQueryParameter(key, value)
+                if (value != null) {
+                    newUrlBuilder.addQueryParameter(key, value.toString())
+                }
             }
             newUrlBuilder.build().toString()
         } else {
@@ -132,7 +134,7 @@ object NetworkClient {
 
     suspend fun getBytes(
         url: String,
-        params: Map<String, String>? = null,
+        params: Map<String, Any?>? = null,
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<ByteArray> {
@@ -141,7 +143,9 @@ object NetworkClient {
             val existingUrl = url.toHttpUrl()
             val newUrlBuilder = existingUrl.newBuilder()
             params.forEach { (key, value) ->
-                newUrlBuilder.addQueryParameter(key, value)
+                if (value != null) {
+                    newUrlBuilder.addQueryParameter(key, value.toString())
+                }
             }
             newUrlBuilder.build().toString()
         } else {
@@ -159,7 +163,7 @@ object NetworkClient {
     suspend fun post(
         url: String,
         bodyMap: Map<String, Any>,
-        params: Map<String, String>? = null,
+        params: Map<String, Any?>? = null,
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
@@ -168,7 +172,9 @@ object NetworkClient {
             val existingUrl = url.toHttpUrl()
             val newUrlBuilder = existingUrl.newBuilder()
             params.forEach { (key, value) ->
-                newUrlBuilder.addQueryParameter(key, value)
+                if (value != null) {
+                    newUrlBuilder.addQueryParameter(key, value.toString())
+                }
             }
             newUrlBuilder.build().toString()
         } else {
@@ -187,13 +193,17 @@ object NetworkClient {
     suspend fun postMultipart(
         url: String,
         parts: Map<String, Any>,
-        params: Map<String, String>? = null,
+        params: Map<String, Any?>? = null,
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
         val requestUrl = if (!params.isNullOrEmpty()) {
             val urlBuilder = url.toHttpUrl().newBuilder()
-            params.forEach { (k, v) -> urlBuilder.addQueryParameter(k, v) }
+            params.forEach { (k, v) ->
+                if (v != null) {
+                    urlBuilder.addQueryParameter(k, v.toString())
+                }
+            }
             urlBuilder.build().toString()
         } else {
             url

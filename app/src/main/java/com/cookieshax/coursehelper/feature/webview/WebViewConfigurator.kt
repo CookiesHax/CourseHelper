@@ -2,6 +2,7 @@ package com.cookieshax.coursehelper.feature.webview
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
@@ -23,12 +24,23 @@ object WebViewConfigurator {
             domStorageEnabled = true
             useWideViewPort = true
             loadWithOverviewMode = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             builtInZoomControls = true
             displayZoomControls = false
+            javaScriptCanOpenWindowsAutomatically = true
             setSupportZoom(true)
             textZoom = 100 // 防止系统字体大小影响
             layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL // 禁用自动调整视图
             userAgentString = NetworkClient.getUserAgent()
+        }
+    }
+
+    fun updateUserAgent(webView: WebView, url: String?) {
+        if (url != null && url.contains("xuexi365.com")) {
+            // xuexi365.com 不改变 UA (使用系统默认)
+            webView.settings.userAgentString = null
+        } else {
+            webView.settings.userAgentString = NetworkClient.getUserAgent()
         }
     }
 
@@ -38,6 +50,11 @@ object WebViewConfigurator {
         onTitleChanged: (String?) -> Unit
     ): WebViewClient {
         return object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                view?.let { updateUserAgent(it, url) }
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 isLoading.value = false
