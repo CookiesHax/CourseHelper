@@ -32,13 +32,18 @@ class WebViewViewModel : ViewModel() {
             webView = WebView(context).apply {
                 WebViewConfigurator.configureSettings(settings)
                 WebViewConfigurator.applyViewConfig(this)
-                if (isDarkTheme) {
-                    if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                        WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings, true)
-                        Log.d("WebViewDarkMode", "Enabled algorithmic darkening (Android 13+)")
-                    }
-                }
+                applyTheme(isDarkTheme)
             }
+        }
+    }
+
+    fun applyTheme(isDarkTheme: Boolean) {
+        webView?.let { wv ->
+            val settings = wv.settings
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings, isDarkTheme)
+            }
+            Log.d("WebViewDarkMode", "Set dark mode to $isDarkTheme")
         }
     }
 
