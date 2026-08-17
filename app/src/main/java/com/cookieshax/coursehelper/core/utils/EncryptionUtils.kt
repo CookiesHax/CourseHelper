@@ -176,12 +176,16 @@ object EncryptionUtils {
     fun getUuid(): String = UUID.randomUUID().toString()
     fun getDeviceCode(): String = aesEcbEncrypt(getUuid(), Constant.DEVICE_CODE_KEY)
 
-    fun getEncParams(params: Map<String, String>): Map<String, String> {
+    fun getEncParams(params: Map<String, Any?>): Map<String, String> {
         val encParams = mutableMapOf<String, String>()
         encParams["_c_0_"] = getPlainUuid()
         encParams["token"] = Constant.INF_ENC_TOKEN
         encParams["_time"] = System.currentTimeMillis().toString()
-        encParams.putAll(params)
+        params.forEach { (key, value) ->
+            if (value != null) {
+                encParams[key] = value.toString()
+            }
+        }
 
         val queryString = encParams.entries.joinToString("&") { "${it.key}=${it.value}" }
 

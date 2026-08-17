@@ -9,6 +9,7 @@ import com.cookieshax.coursehelper.core.utils.ImageUtils
 import com.cookieshax.coursehelper.core.utils.StringUtils
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
+import com.cookieshax.coursehelper.feature.course.model.CourseTask
 import org.json.JSONObject
 import java.io.File
 
@@ -273,6 +274,24 @@ object ApiManager {
         return NetworkClient.get(
             "https://mobilelearn.chaoxing.com/v2/apis/active/student/activelist",
             params
+        )
+    }
+
+    suspend fun getNotice(task: CourseTask): ApiResult<String> {
+        val uid = AccountRepository.activeAccountIdFlow.value ?: return ApiResult.Error("未登录")
+
+        val params: Map<String, Any?> = mapOf(
+            "sendTag" to 0,
+            "puid" to uid,
+            "sid" to task.idCode,
+            "noticeUUID" to null,
+            "maxW" to 1080,
+            "updateTime" to task.startTime
+        )
+        
+        return NetworkClient.get(
+            "https://notice.chaoxing.com/apis/notice/getNotice",
+            EncryptionUtils.getEncParams(params)
         )
     }
 
@@ -582,7 +601,7 @@ object ApiManager {
         )
 
         if (params["objectId"] == "") params.remove("objectId")
-        if (params["validate"] == "") params.remove(params["validate"])
+        if (params["validate"] == "") params.remove("validate")
 
         return NetworkClient.get(
             "https://mobilelearn.chaoxing.com/pptSign/stuSignajax",

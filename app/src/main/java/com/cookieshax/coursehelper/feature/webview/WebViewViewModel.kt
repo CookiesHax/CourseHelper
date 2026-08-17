@@ -56,7 +56,10 @@ class WebViewViewModel : ViewModel() {
 
     fun loadUrl(url: String, headers: Map<String, String> = emptyMap()) {
         webView?.post {
-            webView?.loadUrl(url, headers)
+            webView?.let { wv ->
+                WebViewConfigurator.updateUserAgent(wv, url)
+                wv.loadUrl(url, headers)
+            }
             updateWebViewCurrentUrl(url)
             setHasLoadedInitially(true)
         }
