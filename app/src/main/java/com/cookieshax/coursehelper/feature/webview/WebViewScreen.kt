@@ -44,6 +44,7 @@ import androidx.navigation.NavController
 import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.permission.PermissionManager
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.core.utils.FileUtils
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
@@ -65,8 +66,17 @@ fun WebViewScreen(
     val scope = rememberCoroutineScope()
 
     val viewModel = viewModel<WebViewViewModel>()
+    val settingsViewModel = viewModel<SettingsViewModel>()
+    val appTheme by settingsViewModel.appTheme.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val isDarkTheme = remember(appTheme, systemDark) {
+        when (appTheme) {
+            "light" -> false
+            "dark" -> true
+            else -> systemDark
+        }
+    }
     val isLoading = remember { mutableStateOf(true) }
-    val isDarkTheme = isSystemInDarkTheme()
 
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     var tempPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
@@ -133,6 +143,11 @@ fun WebViewScreen(
     // 同步初始化 WebView 确保在 AndroidView factory 前完成
     if (viewModel.webView == null) {
         viewModel.initializeWebView(context, isDarkTheme)
+    }
+
+    // 监听主题变化并更新 WebView
+    LaunchedEffect(isDarkTheme) {
+        viewModel.applyTheme(isDarkTheme)
     }
 
     // 生命周期管理 - 只清理 LocationService
