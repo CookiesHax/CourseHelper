@@ -15,9 +15,13 @@ import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONException
 import org.json.JSONObject
+import kotlin.time.Duration.Companion.seconds
 
 class JsBridgeHandlers(
     private val jsBridgeInterface: JsBridgeInterface,
@@ -25,7 +29,8 @@ class JsBridgeHandlers(
     private val scope: CoroutineScope,
     private val onOpenUrl: (String) -> Unit,
     private val onCloseWebView: () -> Unit,
-    private val onChooseImage: () -> Unit
+    private val onChooseImage: () -> Unit,
+    private val onLocationRequested: () -> Unit = {}
 ) {
     // 处理所有 JS Bridge 回调
     fun handle(notificationName: String, paramsJson: String) {
@@ -116,42 +121,64 @@ class JsBridgeHandlers(
     }
 
     private fun handleUserLocation() {
-        val currentLocation = LocationService.getCurrentLocation()
-        val latitude = currentLocation.latitude
-        val longitude = currentLocation.longitude
-
-        GeoCodeService.reverseGeoCode(latitude, longitude) { result ->
-            val rawAddress = result?.address ?: "null"
-            val safeGlobalAddress = rawAddress.replace("\"", "\\\"")
-
-            val poiListJson = result?.poiList?.joinToString(",\n") { poi ->
-                val safePoiName = (poi.name ?: "").replace("\"", "\\\"")
-                val safePoiAddress = (poi.address ?: "").replace("\"", "\\\"")
-                """
-                {
-                  "name": "$safePoiName",
-                  "address": "$safePoiAddress",
-                  "longitude": ${poi.location?.longitude ?: 0.0},
-                  "latitude": ${poi.location?.latitude ?: 0.0}
+        onLocationRequested()
+        scope.launch(Dispatchers.IO) {
+            try {
+                // 等待有效的定位数据
+                val location = withTimeoutOrNull(10L.seconds) {
+                    LocationService.locationUpdates
+                        .filterNotNull()
+                        .first { it.latitude != 0.0 && it.longitude != 0.0 }
                 }
+
+                if (location == null) {
+                    Log.e("WebViewScreen", "handleUserLocation: Get location timeout")
+                    jsBridgeInterface.sendMessageToWebView(
+                        "CLIENT_USER_LOCATION",
+                        "{\"result\": 0}"
+                    )
+                    return@launch
+                }
+
+                val latitude = location.latitude
+                val longitude = location.longitude
+
+                val result = GeoCodeService.reverseGeoCodeSuspend(latitude, longitude)
+                val rawAddress = result?.address ?: "null"
+                val safeGlobalAddress = rawAddress.replace("\"", "\\\"")
+
+                val poiListJson = result?.poiList?.joinToString(",\n") { poi ->
+                    val safePoiName = (poi.name ?: "").replace("\"", "\\\"")
+                    val safePoiAddress = (poi.address ?: "").replace("\"", "\\\"")
+                    """
+                    {
+                      "name": "$safePoiName",
+                      "address": "$safePoiAddress",
+                      "longitude": ${poi.location?.longitude ?: 0.0},
+                      "latitude": ${poi.location?.latitude ?: 0.0}
+                    }
+                    """.trimIndent()
+                } ?: ""
+
+                val locationJson = """
+                    {
+                      "result": 1,
+                      "longitude": $longitude,
+                      "latitude": $latitude,
+                      "address": "$safeGlobalAddress",
+                      "poiList": [$poiListJson],
+                      "mockData": {
+                        "probability": 0,
+                        "strategy": "GPS_NATIVE"
+                      }
+                    }
                 """.trimIndent()
-            } ?: ""
 
-            val locationJson = """
-                {
-                  "result": 1,
-                  "longitude": $longitude,
-                  "latitude": $latitude,
-                  "address": "$safeGlobalAddress",
-                  "poiList": [$poiListJson],
-                  "mockData": {
-                    "probability": 0,
-                    "strategy": "GPS_NATIVE"
-                  }
-                }
-            """.trimIndent()
-
-            jsBridgeInterface.sendMessageToWebView("CLIENT_USER_LOCATION", locationJson)
+                jsBridgeInterface.sendMessageToWebView("CLIENT_USER_LOCATION", locationJson)
+            } catch (e: Exception) {
+                Log.e("WebViewScreen", "handleUserLocation error: ${e.message}", e)
+                jsBridgeInterface.sendMessageToWebView("CLIENT_USER_LOCATION", "{\"result\": 0}")
+            }
         }
     }
 

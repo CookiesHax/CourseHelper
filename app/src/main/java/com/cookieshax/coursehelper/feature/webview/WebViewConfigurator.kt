@@ -11,6 +11,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.ValueCallback
 import android.net.Uri
+import android.webkit.GeolocationPermissions
 import androidx.compose.runtime.MutableState
 import com.cookieshax.coursehelper.R
 import com.cookieshax.coursehelper.core.network.NetworkClient
@@ -75,7 +76,8 @@ object WebViewConfigurator {
     }
 
     fun createWebChromeClient(
-        onShowFileChooser: (ValueCallback<Array<Uri>>?, WebChromeClient.FileChooserParams?) -> Boolean
+        onShowFileChooser: (ValueCallback<Array<Uri>>?, WebChromeClient.FileChooserParams?) -> Boolean,
+        onGeolocationPermissionsShowPrompt: (String?, GeolocationPermissions.Callback?) -> Unit
     ): WebChromeClient {
         return object : WebChromeClient() {
             override fun onShowFileChooser(
@@ -84,6 +86,13 @@ object WebViewConfigurator {
                 fileChooserParams: FileChooserParams?
             ): Boolean {
                 return onShowFileChooser(filePathCallback, fileChooserParams)
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                onGeolocationPermissionsShowPrompt(origin, callback)
             }
         }
     }
