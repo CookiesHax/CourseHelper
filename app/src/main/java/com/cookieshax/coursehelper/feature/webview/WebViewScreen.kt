@@ -81,6 +81,7 @@ fun WebViewScreen(
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     var tempPhotoPath by rememberSaveable { mutableStateOf<String?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
+    var isLocationRequired by remember { mutableStateOf(false) }
 
     val fileChooserLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -152,8 +153,8 @@ fun WebViewScreen(
 
     // 生命周期管理 - 只清理 LocationService
     // WebView 由 ViewModel 管理 在 ViewModel 销毁时清理
-    DisposableEffect(locationPermissionState.status.isGranted) {
-        if (locationPermissionState.status.isGranted) {
+    DisposableEffect(isLocationRequired, locationPermissionState.status.isGranted) {
+        if (isLocationRequired && locationPermissionState.status.isGranted) {
             val locationHandle = LocationService.register()
             onDispose {
                 Log.d("WebViewDebug", "WebViewScreen OnDispose - LocationService cleanup")
@@ -166,20 +167,22 @@ fun WebViewScreen(
     }
 
     // 获取权限状态
-    LaunchedEffect(locationPermissionState.status.isGranted) {
-        if (!PermissionManager.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
-            if (!locationPermissionState.status.isGranted) {
-                locationPermissionState.launchPermissionRequest()
+    LaunchedEffect(isLocationRequired, locationPermissionState.status.isGranted) {
+        if (isLocationRequired) {
+            if (!PermissionManager.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                if (!locationPermissionState.status.isGranted) {
+                    locationPermissionState.launchPermissionRequest()
+                }
             }
-        }
 
-        if (!LocationService.isLocationEnabled(context)) {
-            "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
+            if (!LocationService.isLocationEnabled(context)) {
+                "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
+            }
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (!LocationService.isLocationEnabled(context)) {
+    LaunchedEffect(isLocationRequired) {
+        if (isLocationRequired && !LocationService.isLocationEnabled(context)) {
             "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
         }
     }
@@ -279,6 +282,9 @@ fun WebViewScreen(
                                 onCloseWebView = onBackPressed,
                                 onChooseImage = {
                                     showImageSourceDialog = true
+                                },
+                                onLocationRequested = {
+                                    isLocationRequired = true
                                 }
                             )
                             handlers.handle(notificationName, paramsJson)
@@ -289,12 +295,18 @@ fun WebViewScreen(
                         ) { title ->
                             viewModel.pageTitle.value = title
                         }
-                        webChromeClient = WebViewConfigurator.createWebChromeClient { callback, _ ->
-                            filePathCallback?.onReceiveValue(null)
-                            filePathCallback = callback
-                            fileChooserLauncher.launch("image/*")
-                            true
-                        }
+                        webChromeClient = WebViewConfigurator.createWebChromeClient(
+                            onShowFileChooser = { callback, _ ->
+                                filePathCallback?.onReceiveValue(null)
+                                filePathCallback = callback
+                                fileChooserLauncher.launch("image/*")
+                                true
+                            },
+                            onGeolocationPermissionsShowPrompt = { origin, callback ->
+                                isLocationRequired = true
+                                callback?.invoke(origin, true, false)
+                            }
+                        )
                     }
                 },
                 update = {},
