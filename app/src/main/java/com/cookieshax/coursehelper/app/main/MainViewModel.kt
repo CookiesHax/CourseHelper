@@ -28,6 +28,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val accounts: StateFlow<List<Account>> = AccountRepository.accountList
     val accountsId: StateFlow<List<String>> = AccountRepository.accountsIdFlow
     val activeAccountId: StateFlow<String?> = AccountRepository.activeAccountIdFlow
+    val activeAccount: StateFlow<Account?> = AccountRepository.activeAccountFlow
 
     fun updateSearchQuery(query: String) {
         savedStateHandle[KEY_SEARCH_QUERY] = query

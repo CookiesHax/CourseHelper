@@ -86,6 +86,7 @@ fun MainScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     val activeAccountId by mainViewModel.activeAccountId.collectAsState()
+    val activeAccount by mainViewModel.activeAccount.collectAsState()
     val accounts by mainViewModel.accounts.collectAsState()
     val allAccountsId by mainViewModel.accountsId.collectAsState()
 
@@ -238,7 +239,11 @@ fun MainScreen(navController: NavController) {
                                                 text = { Text("添加课程") },
                                                 onClick = {
                                                     showLoginMenu = false
-                                                    showInviteCodeDialog = true
+                                                    if (activeAccountId != null) {
+                                                        showInviteCodeDialog = true
+                                                    } else {
+                                                        "必须选择一个账号才能添加课程".showToast()
+                                                    }
                                                 }
                                             )
                                         }
@@ -449,7 +454,7 @@ fun MainScreen(navController: NavController) {
                 var text by remember { mutableStateOf("") }
                 AlertDialog(
                     onDismissRequest = { showInviteCodeDialog = false },
-                    title = { Text("输入邀请码") },
+                    title = { Text("为 ${activeAccount?.name ?: "未知用户"} 添加课程") },
                     text = {
                         Column {
                             OutlinedTextField(
