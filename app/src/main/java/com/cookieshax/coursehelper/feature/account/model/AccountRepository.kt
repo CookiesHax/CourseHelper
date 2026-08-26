@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -74,6 +75,12 @@ object AccountRepository {
         dataStore.data
             .map { prefs -> prefs[activeAccountIdKey] }
             .stateIn(applicationScope, SharingStarted.Eagerly, null)
+    }
+
+    val activeAccountFlow: StateFlow<Account?> by lazy {
+        combine(activeAccountIdFlow, accountList) { activeId, list ->
+            list.find { it.uid == activeId }
+        }.stateIn(applicationScope, SharingStarted.Eagerly, null)
     }
 
     // 同步地获取当前账号数据

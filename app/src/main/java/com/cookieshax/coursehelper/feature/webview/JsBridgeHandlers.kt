@@ -50,9 +50,7 @@ class JsBridgeHandlers(
     }
 
     private fun handleGetUserInfo() {
-        val activeAccountId = AccountRepository.activeAccountIdFlow.value
-        val accounts = AccountRepository.getCurrentListSnapshot()
-        val currentAccount = accounts.find { it.uid == activeAccountId }
+        val currentAccount = AccountRepository.activeAccountFlow.value
 
         if (currentAccount != null) {
             scope.launch(Dispatchers.IO) {
@@ -225,27 +223,21 @@ class JsBridgeHandlers(
     private fun handleLoginStatus() {
         val json = JSONObject()
 
-        val activeAccountId = AccountRepository.activeAccountIdFlow.value
-        if (activeAccountId == null) {
+        val currentAccount = AccountRepository.activeAccountFlow.value
+        if (currentAccount == null) {
             json.apply {
                 put("status", "0")
                 put("message", "not logged in")
             }
-        }
-
-        val name =
-            AccountRepository.getCurrentListSnapshot().find { it.uid == activeAccountId }?.name
-        if (name.isNullOrEmpty()) {
-            Log.e("WebViewScreen", "Active account name is null or empty for uid: $activeAccountId")
-        }
-
-        json.apply {
-            put("status", "1")
-            put("message", "success")
-            put("data", JSONObject().apply {
-                put("uid", activeAccountId)
-                put("name", name)
-            })
+        } else {
+            json.apply {
+                put("status", "1")
+                put("message", "success")
+                put("data", JSONObject().apply {
+                    put("uid", currentAccount.uid)
+                    put("name", currentAccount.name)
+                })
+            }
         }
 
         jsBridgeInterface.sendMessageToWebView(
