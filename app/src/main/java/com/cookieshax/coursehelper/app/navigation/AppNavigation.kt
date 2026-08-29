@@ -1,10 +1,8 @@
 package com.cookieshax.coursehelper.app.navigation
 
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.cookieshax.coursehelper.app.main.MainScreen
 import com.cookieshax.coursehelper.feature.account.ui.TagManagerScreen
 import com.cookieshax.coursehelper.feature.camera.CameraScreen
@@ -27,41 +26,9 @@ import com.cookieshax.coursehelper.feature.settings.ui.SettingsScreen
 import com.cookieshax.coursehelper.feature.checkin.ui.CheckInScreen
 import com.cookieshax.coursehelper.feature.webview.WebViewScreen
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-
-    // 进入此页面
-    val enterTransition = slideInHorizontally(
-        initialOffsetX = { it }, animationSpec = tween(300)
-    ) + fadeIn(
-        animationSpec = tween(300)
-    )
-
-    // 进入新页面
-    val exitTransition = fadeOut(animationSpec = tween(300))
-
-    // 返回到此页面
-    val popEnterTransition = slideInHorizontally(
-        initialOffsetX = { -it / 3 }, animationSpec = tween(300)
-    ) + fadeIn(
-        animationSpec = tween(300)
-    )
-
-    // 退出此页面
-    val popExitTransition = fadeOut(
-        animationSpec = tween(300)
-    ) + scaleOut(
-        targetScale = 0.85f,
-        animationSpec = tween(300)
-    )
-
-    // 对于不能正确实现 fade 效果的页面
-    // 退出此页面
-    val popExitTransitionNoFade = slideOutHorizontally(
-        targetOffsetX = { it }, animationSpec = tween(300)
-    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -69,53 +36,76 @@ fun AppNavigation() {
     ) {
         NavHost(
             navController = navController,
-            startDestination = MainRoute
+            startDestination = MainRoute,
+            // 前进进入 - 新页面从右侧 2/3 位置向左划入
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it * 2 / 3 },
+                    animationSpec = tween(400)
+                ) + fadeIn(tween(400))
+            },
+            // 前进退出 - 旧页面原地淡出
+            exitTransition = {
+                fadeOut(tween(400))
+            },
+            // 后退进入 - 上一个页面从左侧 2/3 位置向右划入 (LTR)
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { -it * 2 / 3 }, // 负坐标代表从左侧开始
+                    animationSpec = tween(400)
+                ) + fadeIn(tween(400))
+            },
+            // 后退退出 - 当前关闭的页面原地淡出
+            popExitTransition = {
+                fadeOut(tween(400))
+            },
+            // 预测性返回保持一致
+            predictivePopEnterTransition = { _ ->
+                slideInHorizontally(
+                    initialOffsetX = { -it * 2 / 3 },
+                    animationSpec = tween(400)
+                ) + fadeIn(tween(400))
+            },
+            predictivePopExitTransition = {
+                val isSlideRoute = initialState.destination.hasRoute<MapRoute>() ||
+                        initialState.destination.hasRoute<CameraRoute>()
+                if (isSlideRoute) {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(400)
+                    )
+                } else {
+                    fadeOut(tween(400))
+                }
+            }
         ) {
             composable<MainRoute> {
                 MainScreen(navController = navController)
             }
-            composable<SettingsRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) {
+            composable<SettingsRoute> {
                 SettingsScreen(navController = navController)
             }
             composable<MapRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransitionNoFade }
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(400)
+                    )
+                }
             ) {
                 MapScreen(onBackClick = { navController.popBackStack() })
             }
-            composable<TagManagerRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) {
+            composable<TagManagerRoute> {
                 TagManagerScreen(navController = navController)
             }
-            composable<LoginRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) { backStackEntry ->
+            composable<LoginRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<LoginRoute>()
                 LoginScreen(
                     onBack = { navController.popBackStack() },
                     initialLoginType = route.loginType
                 )
             }
-            composable<CourseTaskRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) { backStackEntry ->
+            composable<CourseTaskRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<CourseTaskRoute>()
                 CourseTaskListScreen(
                     courseId = route.courseId,
@@ -123,12 +113,7 @@ fun AppNavigation() {
                     navController = navController
                 )
             }
-            composable<WebViewRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) { backStackEntry ->
+            composable<WebViewRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<WebViewRoute>()
                 WebViewScreen(
                     url = route.url,
@@ -140,21 +125,16 @@ fun AppNavigation() {
                 deepLinks = listOf(
                     navDeepLink<CameraRoute>(basePath = "coursehelper://scan")
                 ),
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransitionNoFade }
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(400)
+                    )
+                }
             ) {
-                CameraScreen(
-                    navController = navController
-                )
+                CameraScreen(navController = navController)
             }
-            composable<CheckInRoute>(
-                enterTransition = { enterTransition },
-                exitTransition = { exitTransition },
-                popEnterTransition = { popEnterTransition },
-                popExitTransition = { popExitTransition }
-            ) { backStackEntry ->
+            composable<CheckInRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<CheckInRoute>()
                 CheckInScreen(
                     url = route.url,
