@@ -22,12 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
-import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
-import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.network.CookieManager
-import com.cookieshax.coursehelper.core.utils.StringUtils
 import com.cookieshax.coursehelper.core.utils.showToast
 
 @Keep
@@ -42,42 +39,22 @@ suspend fun handlePostLoginSuccess(
     onBack: () -> Unit
 ): Boolean {
     // 在登录成功后 Cookie 已经存储在上下文 CookieJar 中
-    // 现在调用 getUserInfo 但传递 asUser = null 以使用上下文 Cookie
-    when (val userInfoResult = ApiManager.getUserInfo(asUser = null)) {
+    // 调用 refreshAccount(null) 以使用上下文 Cookie 获取并保存用户信息
+    return when (val result = AccountRepository.refreshAccount(null)) {
         is ApiResult.Success -> {
-            val userInfo = StringUtils.parseJson(userInfoResult.data)
-            if (userInfo != null) {
-                val result = StringUtils.getString(userInfo, "result", "0")
-                if (result == "0") {
-                    val errorMsg = StringUtils.getString(userInfo, "errorMsg", "获取用户信息失败")
-                    snackbarHostState.showSnackbar(errorMsg)
-                    return false
-                }
+            val newAccount = result.data
+            // 将登录 Cookie 从临时 Jar 转移到对应 UID 的持久化存储
+            CookieManager.transferLoginCookiesToUser(newAccount.uid, context)
+            AccountRepository.switchActiveAccount(newAccount.uid)
 
-                val msg = userInfo.getAsJsonObject("msg")
-
-                if (msg != null) {
-                    val newAccount = Account.fromJsonObject(msg)
-                    CookieManager.transferLoginCookiesToUser(newAccount.uid, context)
-                    AccountRepository.addOrUpdateAccount(newAccount)
-                    AccountRepository.switchActiveAccount(newAccount.uid)
-
-                    "「${newAccount.name}」登录成功".showToast()
-                    onBack()
-                    return true
-                } else {
-                    "解析用户信息失败：缺少msg字段".showToast()
-                    return false
-                }
-            } else {
-                "解析用户信息失败：userInfo为空".showToast()
-                return false
-            }
+            "「${newAccount.name}」登录成功".showToast()
+            onBack()
+            true
         }
 
         is ApiResult.Error -> {
-            snackbarHostState.showSnackbar(userInfoResult.message)
-            return false
+            snackbarHostState.showSnackbar(result.message)
+            false
         }
     }
 }

@@ -86,43 +86,59 @@ object AccountRepository {
     // 同步地获取当前账号数据
     fun getCurrentListSnapshot(): List<Account> = accountList.value
 
-    suspend fun validateAccount(userId: String): AccountStatus {
+    // 刷新指定账号的信息
+    // 如果 uid 为空则刷新当前正在登录的账号 (用于登录后的同步)
+    suspend fun refreshAccount(uid: String? = null): ApiResult<Account> {
         return try {
-            when (val response = ApiManager.getUserInfo(userId)) {
+            when (val response = ApiManager.getUserInfo(uid)) {
                 is ApiResult.Success -> {
-                    val userInfo =
-                        StringUtils.parseJson(response.data) ?: return AccountStatus.UNKNOWN
-
-                    val result = StringUtils.getString(userInfo, "result", "0")
+                    val json = StringUtils.parseJson(response.data)
+                        ?: return ApiResult.Error("解析用户信息失败")
+                    val result = StringUtils.getString(json, "result", "0")
                     if (result == "1") {
-                        AccountStatus.VALID
+                        val msg = json.getAsJsonObject("msg")
+                        if (msg != null) {
+                            val account =
+                                Account.fromJsonObject(msg).copy(status = AccountStatus.VALID)
+                            addOrUpdateAccount(account)
+                            ApiResult.Success(account)
+                        } else {
+                            ApiResult.Error("用户信息解析异常：msg为空")
+                        }
                     } else {
-                        AccountStatus.EXPIRED
+                        val errorMsg = StringUtils.getString(json, "errorMsg", "登录已过期")
+                        // 如果是刷新特定账号且失败 更新状态为过期
+                        uid?.let { id ->
+                            accountDao.getAccountById(id)?.let {
+                                addOrUpdateAccount(it.copy(status = AccountStatus.EXPIRED))
+                            }
+                        }
+                        ApiResult.Error(errorMsg)
                     }
                 }
 
-                is ApiResult.Error -> {
-                    AccountStatus.UNKNOWN
-                }
+                is ApiResult.Error -> ApiResult.Error(response.message)
             }
-        } catch (_: Exception) {
-            AccountStatus.UNKNOWN
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "刷新账号信息失败")
         }
     }
 
-    suspend fun syncAllAccountsStatus() {
+    suspend fun syncAccounts() {
         val currentAccountList = accountList.value
         val hasExpired = AtomicBoolean(false)
         coroutineScope {
             currentAccountList.forEach { account ->
                 // 为每个账户开启一个独立的协程并行去抓取数据
                 launch {
-                    val status = validateAccount(account.uid)
-                    if (status == AccountStatus.EXPIRED) {
-                        hasExpired.set(true)
+                    val result = refreshAccount(account.uid)
+                    if (result is ApiResult.Error) {
+                        // 检查数据库中的状态 如果标记为过期则触发事件
+                        val updated = accountDao.getAccountById(account.uid)
+                        if (updated?.status == AccountStatus.EXPIRED) {
+                            hasExpired.set(true)
+                        }
                     }
-
-                    addOrUpdateAccount(account.copy(status = status))
                 }
             }
         }

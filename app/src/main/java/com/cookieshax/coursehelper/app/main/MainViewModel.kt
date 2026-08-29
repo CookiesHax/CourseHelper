@@ -40,7 +40,7 @@ class MainViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     fun syncAccounts() {
         viewModelScope.launch {
-            AccountRepository.syncAllAccountsStatus()
+            AccountRepository.syncAccounts()
         }
     }
 }
