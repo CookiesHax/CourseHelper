@@ -1,5 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,6 +22,42 @@ fun getLocalProperty(key: String): String {
 val baiduApiKey: String = getLocalProperty("BAIDU_API_KEY")
 val baiduApiKeyDebug: String =
     getLocalProperty("BAIDU_API_KEY_DEBUG").let { it.ifEmpty { baiduApiKey } }
+
+// OpenCV 静态库下载配置
+val opencvVersion = "4.13.0"
+val opencvSdkUrl =
+    "https://github.com/opencv/opencv/releases/download/$opencvVersion/opencv-$opencvVersion-android-sdk.zip"
+val opencvHome = rootProject.file("opencv-static-sdk")
+
+fun ensureOpenCV() {
+    if (!opencvHome.exists()) {
+        logger.lifecycle("OpenCV SDK not found. Downloading $opencvVersion...")
+        val tempZip = file("${layout.buildDirectory.get().asFile}/opencv.zip")
+        tempZip.parentFile.mkdirs()
+
+        URI.create(opencvSdkUrl).toURL().openStream().use { input ->
+            Files.copy(input, tempZip.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+
+        logger.lifecycle("Unzipping OpenCV SDK...")
+        copy {
+            from(zipTree(tempZip))
+            into(opencvHome)
+        }
+        tempZip.delete()
+        logger.lifecycle("OpenCV SDK setup complete: ${opencvHome.absolutePath}")
+    }
+}
+
+// 在配置阶段确保 SDK 存在 以便 CMake 能找到它
+ensureOpenCV()
+
+tasks.register("setupOpenCV") {
+    description = "Setup OpenCV SDK for CMake"
+    doLast {
+        ensureOpenCV()
+    }
+}
 
 if (baiduApiKey.isEmpty()) {
     logger.lifecycle(
@@ -91,7 +130,7 @@ android {
 
         manifestPlaceholders["appName"] = "CourseHelper"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
+
         // 按 ABI 拆分 APK
         splits {
             abi {
@@ -100,6 +139,31 @@ android {
                 include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
                 isUniversalApk = true
             }
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags("")
+                // 使用静态库链接 路径指向自动下载的 SDK
+                arguments(
+                    "-DANDROID_STL=c++_shared",
+                    "-DOpenCV_DIR=${opencvHome.absolutePath}/OpenCV-android-sdk/sdk/native/jni"
+                )
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    // 让 CMake 任务依赖下载任务
+    project.afterEvaluate {
+        tasks.withType<com.android.build.gradle.tasks.ExternalNativeBuildTask>().configureEach {
+            dependsOn("setupOpenCV")
         }
     }
 
@@ -204,9 +268,6 @@ dependencies {
     // HCT Color
     implementation(libs.material.color.utilities)
     implementation(libs.material.kolor)
-
-    // OpenCV
-    implementation(libs.opencv)
 
     // Room
     implementation(libs.androidx.room.runtime)

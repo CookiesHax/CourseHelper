@@ -28,6 +28,11 @@
 -keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
 -keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
 
+# CaptchaSolver Native
+-keepclassmembers class com.cookieshax.coursehelper.feature.checkin.model.CaptchaSolver {
+    native <methods>;
+}
+
 # 剔除 android.util.Log 的所有日志方法
 -assumenosideeffects class android.util.Log {
     public static *** v(...);
