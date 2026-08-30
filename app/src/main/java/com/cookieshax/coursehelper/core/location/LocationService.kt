@@ -1,6 +1,8 @@
 package com.cookieshax.coursehelper.core.location
 
 import android.content.Context
+import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.util.Log
 import com.baidu.location.BDAbstractLocationListener
@@ -32,6 +34,9 @@ object LocationService {
     private var isLocationStarted = false
 
     @Volatile
+    private var isNativeStarted = false
+
+    @Volatile
     private var latitude = 0.0
 
     @Volatile
@@ -55,15 +60,30 @@ object LocationService {
     private val _isMockLocation = MutableStateFlow(false)
     val isMockLocationFlow: StateFlow<Boolean> = _isMockLocation.asStateFlow()
 
-    private val locationClient: LocationClient by lazy {
+    private val nativeLocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            if (!isLocationStarted) return
+            Log.d(TAG, "Native location update: ${location.latitude}, ${location.longitude}")
+
+            // 转换坐标 WGS84 -> BD09LL
+            val (bdLng, bdLat) = CoordinateUtil.wgs84ToBd09(location.longitude, location.latitude)
+            Log.d(TAG, "Converted to BD09LL: $bdLat, $bdLng")
+            updateLocation(bdLat, bdLng, location.bearing)
+        }
+
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
+    }
+
+    private val bdLocationClient: LocationClient by lazy {
         val context = CourseHelperApplication.context
         LocationClient(context).apply {
-            registerLocationListener(locationListener)
+            registerLocationListener(bdLocationListener)
 
             val option = LocationClientOption().apply {
                 locationMode = LocationClientOption.LocationMode.Hight_Accuracy
                 setCoorType("bd09ll")
-                setScanSpan(3000)
+                setScanSpan(5000)
                 setIsNeedAddress(true)
                 setIsNeedLocationPoiList(true)
             }
@@ -72,30 +92,55 @@ object LocationService {
         }
     }
 
-    private val locationListener = object : BDAbstractLocationListener() {
+    private val bdLocationListener = object : BDAbstractLocationListener() {
         override fun onReceiveLocation(location: BDLocation?) {
             if (!isLocationStarted || location == null) return
 
-            Log.d(TAG, "onReceiveLocation: $location")
+            val locType = location.locType
+            val locDescription = location.locTypeDescription
+            Log.d(TAG, "onReceiveLocation type: $locType ($locDescription)")
 
-            val lat = location.latitude
-            val lng = location.longitude
+            // 61 - GPS成功, 161 - 网络定位成功, 66 - 离线定位成功
+            val isSuccess = locType == 61 || locType == 161 || locType == 66
 
-            if (lat != 0.0 || lng != 0.0) {
-                val newDirection = location.direction
+            if (isSuccess) {
+                val lat = location.latitude
+                val lng = location.longitude
+                Log.d(TAG, "Baidu location update: $lat, $lng")
 
-                latitude = lat
-                longitude = lng
-                direction = newDirection
-
-                if (!isMock) {
-                    _locationUpdates.value = LocationData(
-                        latitude = lat,
-                        longitude = lng,
-                        direction = newDirection
-                    )
+                // 百度 SDK 在未授权或失败时可能返回 4.9E-324 (Double.MIN_VALUE) 或 0.0
+                if (lat != 0.0 && lng != 0.0 && lat != Double.MIN_VALUE && lng != Double.MIN_VALUE) {
+                    updateLocation(lat, lng, location.direction)
                 }
+            } else {
+                Log.w(TAG, "Baidu Location abnormal (type $locType), starting native fallback")
+                startNativeLocation()
             }
+        }
+
+        override fun onLocDiagnosticMessage(
+            locType: Int,
+            diagnosticType: Int,
+            diagnosticMessage: String?
+        ) {
+            Log.d(
+                TAG,
+                "onLocDiagnosticMessage: locType=$locType, diagnosticType=$diagnosticType, message=$diagnosticMessage"
+            )
+        }
+    }
+
+    private fun updateLocation(lat: Double, lng: Double, newDirection: Float) {
+        latitude = lat
+        longitude = lng
+        direction = newDirection
+
+        if (!isMock) {
+            _locationUpdates.value = LocationData(
+                latitude = lat,
+                longitude = lng,
+                direction = newDirection
+            )
         }
     }
 
@@ -164,16 +209,78 @@ object LocationService {
     }
 
     private fun startLocation() {
-        locationClient.start()
+        // 尝试启动百度定位
+        try {
+            bdLocationClient.start()
+            Log.d(TAG, "Baidu Location started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start Baidu Location: ${e.message}")
+            startNativeLocation() // 如果百度启动报错 回退到原生
+        }
         isLocationStarted = true
-        Log.d(TAG, "Location started")
+    }
+
+    private fun startNativeLocation() {
+        synchronized(lock) {
+            if (isNativeStarted) return
+            val context = CourseHelperApplication.context
+            Log.d(TAG, "Starting Native Location fallback...")
+            try {
+                val locationManager =
+                    context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        5000L,
+                        0f,
+                        nativeLocationListener
+                    )
+                }
+                if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        5000L,
+                        0f,
+                        nativeLocationListener
+                    )
+                }
+                isNativeStarted = true
+                Log.d(TAG, "Native Location fallback started")
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Native location permission missing: ${e.message}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start native location: ${e.message}")
+            }
+        }
     }
 
     private fun stopLocation() {
         if (isLocationStarted) {
-            locationClient.stop()
+            // 停止百度
+            try {
+                bdLocationClient.stop()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to stop Baidu Location: ${e.message}")
+            }
+
+            // 停止原生
+            stopNativeLocation()
+
             isLocationStarted = false
             Log.d(TAG, "Location stopped")
+        }
+    }
+
+    private fun stopNativeLocation() {
+        synchronized(lock) {
+            if (isNativeStarted) {
+                val context = CourseHelperApplication.context
+                val locationManager =
+                    context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                locationManager.removeUpdates(nativeLocationListener)
+                isNativeStarted = false
+                Log.d(TAG, "Native Location stopped")
+            }
         }
     }
 
