@@ -16,35 +16,67 @@
 
 ## 构建指南
 
+> [!IMPORTANT]
+> 您可以使用 Github Workflow 进行构建，请 [fork](https://github.com/CookiesHax/CourseHelper/fork)
+> 此仓库。
+> 在 Fork 的仓库中 进入 Settings -> Secrets and variables -> Actions -> New repository
+> secret，按照提示添加密钥。
+
+gradle 会优先在 `环境变量` 中查找签名配置，如果未找到则使用 `local.properties` 中的配置，如仍未找到则在
+`项目属性` 中查找。
+
 本项目使用 `local.properties` 管理私密配置，请确保在构建前已在根目录创建该文件。
 
 注意：请勿将包含真实密钥的 `local.properties` 提交至公共仓库。
 
-### 1. 配置定位 SDK
+### 1. 克隆项目到本地
 
-为了使应用内的定位功能正常工作，请在 `local.properties` 文件中添加以下配置：
+```bash
+git clone https://github.com/CookiesHax/CourseHelper.git
+```
+
+### 2. 配置定位 SDK (非必须但建议)
+
+为了使应用内的定位功能正常工作，请在 `local.properties` 文件或 `Repository secrets` 中添加以下配置：
 
 ```properties
 # 百度地图/定位 SDK 密钥
-BAIDU_API_KEY=你的百度API_KEY
-BAIDU_API_KEY_DEBUG=API_KEY (可选，仅用于调试)
+BAIDU_API_KEY=你的百度地图AK
+BAIDU_API_KEY_DEBUG=百度地图AK (仅用于调试)
 ```
 
-注：debug 版本包名与 release 不同，申请 ak 时请注意不要遗漏 `.debug` 后缀
+在 [百度地图开放平台](https://lbsyun.baidu.com/) 获取 ACCESS_KEY。
 
-### 2. 配置应用签名(可选)
+若不提供您仍可正常构建和使用应用，但定位功能将受限于 GPS。
+经过测试，室内环境下使用原生定位服务从启动到第一次成功获取位置共耗时约 30 秒，而百度定位服务耗时仅约
+0.250 秒。
+
+注：debug 版本包名与 release 不同，申请 ak 时请注意不要遗漏 `.debug` 后缀。
+
+release 版本包名 `com.cookieshax.coursehelper`
+
+debug 版本包名 `com.cookieshax.coursehelper.debug`
+
+### 3. 配置应用签名(可选)
 
 在 `local.properties` 中添加签名相关配置以支持 Release 构建：
 
+若使用github workflow，请将文件编码为 base64 格式后添加为 Repository secrets
+`RELEASE_STORE_FILE_BASE64`。
+此时不需要添加 `RELEASE_STORE_FILE_PATH`。
+
 ```properties
-RELEASE_STORE_FILE=你的密钥库文件路径（如：/path/to/your/keystore.jks）
+# 为空则默认为 keystore/keystore.jks
+RELEASE_STORE_FILE_PATH=你的密钥库文件路径 (如: path/to/your/keystore.jks)
 RELEASE_STORE_PASSWORD=你的密钥密码
 RELEASE_KEY_ALIAS=你的密钥别名
-RELEASE_KEY_PASSWORD=你的密钥密码
+RELEASE_KEY_ALIAS_PASSWORD=你的密钥别名密码
 ```
 
 如果未提供上述签名配置，构建依然会以 Release 模式进行，但 Gradle 会自动回退使用 Debug 签名 对导出的
 APK 进行签名。
+
+构建产物位于 `app/build/outputs/apk` 目录下。
 
 ## 许可与免责声明
 

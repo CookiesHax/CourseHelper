@@ -3,6 +3,7 @@ import java.util.Properties
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import kotlin.io.encoding.Base64
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,53 +12,80 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-fun getLocalProperty(key: String): String {
-    val file = rootProject.file("local.properties")
-    if (!file.exists()) return ""
-    val props = Properties()
-    file.inputStream().use { props.load(it) }
-    return props.getProperty(key) ?: ""
+fun getSecret(envName: String, propertyName: String = envName): String {
+    // 优先从系统环境变量读取
+    val envValue = System.getenv(envName)
+    if (!envValue.isNullOrEmpty()) return envValue
+
+    // 其次从 local.properties 读取
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        val localProperties = Properties()
+        localPropertiesFile.inputStream().use { stream ->
+            localProperties.load(stream)
+        }
+        val propValue = localProperties.getProperty(propertyName)
+        if (!propValue.isNullOrEmpty()) return propValue
+    }
+
+    // 最后使用 project 属性或默认值兜底
+    return (project.findProperty(propertyName) as? String) ?: ""
 }
 
-val baiduApiKey: String = getLocalProperty("BAIDU_API_KEY")
-val baiduApiKeyDebug: String =
-    getLocalProperty("BAIDU_API_KEY_DEBUG").let { it.ifEmpty { baiduApiKey } }
-
-// OpenCV 静态库下载配置
-val opencvVersion = "4.13.0"
+// OpenCV 自动化 Task 配置
+val opencvVersion = providers.gradleProperty("OPENCV_VERSION").getOrElse("4.13.0")
 val opencvSdkUrl =
     "https://github.com/opencv/opencv/releases/download/$opencvVersion/opencv-$opencvVersion-android-sdk.zip"
-val opencvHome = rootProject.file("opencv-static-sdk")
+val opencvHome = layout.buildDirectory.dir("opencv-sdk/$opencvVersion").get().asFile
+val opencvJniDir = file("${opencvHome.absolutePath}/OpenCV-android-sdk/sdk/native/jni")
 
-fun ensureOpenCV() {
-    if (!opencvHome.exists()) {
-        logger.lifecycle("OpenCV SDK not found. Downloading $opencvVersion...")
-        val tempZip = file("${layout.buildDirectory.get().asFile}/opencv.zip")
-        tempZip.parentFile.mkdirs()
-
-        URI.create(opencvSdkUrl).toURL().openStream().use { input ->
-            Files.copy(input, tempZip.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        }
-
-        logger.lifecycle("Unzipping OpenCV SDK...")
-        copy {
-            from(zipTree(tempZip))
-            into(opencvHome)
-        }
-        tempZip.delete()
-        logger.lifecycle("OpenCV SDK setup complete: ${opencvHome.absolutePath}")
-    }
-}
-
-// 在配置阶段确保 SDK 存在 以便 CMake 能找到它
-ensureOpenCV()
-
-tasks.register("setupOpenCV") {
+// 注册解压 Task
+val setupOpenCVTask = tasks.register("setupOpenCV") {
+    group = "build setup"
     description = "Setup OpenCV SDK for CMake"
+
+    // 声明输入输出 实现 UP-TO-DATE 跳过机制
+    inputs.property("version", opencvVersion)
+    inputs.property("sdkUrl", opencvSdkUrl)
+    outputs.dir(opencvHome)
+
     doLast {
-        ensureOpenCV()
+        if (!opencvJniDir.exists()) {
+            logger.lifecycle("OpenCV SDK directory not found. Downloading $opencvVersion...")
+            val tempZip = file("${layout.buildDirectory.get().asFile}/opencv-$opencvVersion.zip")
+            tempZip.parentFile.mkdirs()
+
+            URI.create(opencvSdkUrl).toURL().openStream().use { input ->
+                Files.copy(input, tempZip.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            logger.lifecycle("Unzipping OpenCV SDK...")
+            copy {
+                from(zipTree(tempZip))
+                into(opencvHome)
+            }
+            tempZip.delete()
+            logger.lifecycle("OpenCV SDK setup complete: ${opencvHome.absolutePath}")
+        }
     }
 }
+
+// CMake 配置任务明确依赖 setupOpenCV
+tasks.configureEach {
+    if (name.startsWith("configureCMake")) {
+        dependsOn(setupOpenCVTask)
+    }
+}
+
+// 挂载到 preBuild
+tasks.named("preBuild") {
+    dependsOn(setupOpenCVTask)
+}
+
+
+val baiduApiKey: String = getSecret("BAIDU_API_KEY")
+val baiduApiKeyDebug: String =
+    getSecret("BAIDU_API_KEY_DEBUG").let { it.ifEmpty { baiduApiKey } }
 
 if (baiduApiKey.isEmpty()) {
     logger.lifecycle(
@@ -76,29 +104,40 @@ kotlin {
 }
 
 android {
-    // 有签名文件时使用自定义签名 否则 fallback 到 debug 签名
-    val releaseStoreFilePath = getLocalProperty("RELEASE_STORE_FILE")
-    val hasReleaseSigningConfig = releaseStoreFilePath.isNotEmpty()
-            && rootProject.file(releaseStoreFilePath).exists()
+    // 获取路径配置 若未指定则默认 fallback 到 "keystore/release.jks"
+    val configuredPath = getSecret("RELEASE_STORE_FILE_PATH")
+        .ifBlank { "keystore/keystore.jks" }
 
+    // 检查此路径对应的文件是否存在
+    var releaseStoreFile = rootProject.file(configuredPath)
+
+    // 如果路径文件不存在 尝试读取 Base64 密钥并生成文件
+    if (!releaseStoreFile.exists()) {
+        val base64Content = getSecret("RELEASE_STORE_FILE_BASE64")
+
+        if (base64Content.isNotBlank()) {
+            releaseStoreFile.parentFile?.mkdirs()
+            releaseStoreFile.writeBytes(Base64.decode(base64Content.trim()))
+            logger.lifecycle("Generated release store file at: ${releaseStoreFile.absolutePath}")
+        }
+    }
+
+    // 校验最终文件是否存在
+    val hasReleaseSigningConfig = releaseStoreFile.exists()
     if (!hasReleaseSigningConfig) {
         logger.lifecycle(
-            "WARNING: Release signing config not found in local.properties. " +
-                    "Using debug signing. To sign with your own key, add these properties to local.properties:\n" +
-                    "  RELEASE_STORE_FILE=keystore/release.jks\n" +
-                    "  RELEASE_STORE_PASSWORD=...\n" +
-                    "  RELEASE_KEY_ALIAS=...\n" +
-                    "  RELEASE_KEY_PASSWORD=..."
+            "WARNING: Release signing config not found at '${releaseStoreFile.path}'. Using debug signing.\n" +
+                    "To sign with your own key, place your keystore at '${configuredPath}' or set RELEASE_STORE_FILE_BASE64."
         )
     }
 
     signingConfigs {
         if (hasReleaseSigningConfig) {
             create("release") {
-                storeFile = rootProject.file(releaseStoreFilePath)
-                storePassword = getLocalProperty("RELEASE_STORE_PASSWORD")
-                keyAlias = getLocalProperty("RELEASE_KEY_ALIAS")
-                keyPassword = getLocalProperty("RELEASE_KEY_PASSWORD")
+                storeFile = releaseStoreFile
+                storePassword = getSecret("RELEASE_STORE_PASSWORD")
+                keyAlias = getSecret("RELEASE_KEY_ALIAS")
+                keyPassword = getSecret("RELEASE_KEY_ALIAS_PASSWORD")
             }
         }
     }
@@ -131,23 +170,14 @@ android {
         manifestPlaceholders["appName"] = "CourseHelper"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 按 ABI 拆分 APK
-        splits {
-            abi {
-                isEnable = true
-                reset()
-                include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-                isUniversalApk = true
-            }
-        }
-
         externalNativeBuild {
             cmake {
                 cppFlags("")
+                abiFilters("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
                 // 使用静态库链接 路径指向自动下载的 SDK
                 arguments(
                     "-DANDROID_STL=c++_shared",
-                    "-DOpenCV_DIR=${opencvHome.absolutePath}/OpenCV-android-sdk/sdk/native/jni"
+                    "-DOpenCV_DIR=${opencvJniDir.absolutePath}"
                 )
             }
         }
@@ -157,13 +187,6 @@ android {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
-        }
-    }
-
-    // 让 CMake 任务依赖下载任务
-    project.afterEvaluate {
-        tasks.withType<com.android.build.gradle.tasks.ExternalNativeBuildTask>().configureEach {
-            dependsOn("setupOpenCV")
         }
     }
 
@@ -199,6 +222,16 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // 按 ABI 拆分 APK
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = false
+        }
     }
 }
 
@@ -275,8 +308,29 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 }
 
-tasks.register("buildReleaseApk") {
+tasks.register("keystoreBase64Report") {
     group = "build"
-    description = "build release APK"
-    dependsOn("assembleRelease")
+    description = "Convert keystore to Base64 (Local execution only)"
+
+    doLast {
+        // 如果在 CI 环境运行 直接拒绝执行
+        val isCiEnv = System.getenv("CI")?.toBoolean() == true ||
+                System.getenv("GITHUB_ACTIONS")?.toBoolean() == true
+        if (isCiEnv) {
+            error("SECURITY WARNING: 'keystoreBase64Report' task is strictly disabled on CI environment to prevent secret leaks!")
+        }
+
+        val keystoreFilePath = getSecret("RELEASE_STORE_FILE_PATH")
+            .ifBlank { "keystore/keystore.jks" }
+        val keystoreFile = rootProject.file(keystoreFilePath)
+
+        if (keystoreFile.exists()) {
+            val base64Content = Base64.encode(keystoreFile.readBytes())
+            logger.lifecycle("================ Keystore Base64 Content ================")
+            logger.lifecycle(base64Content)
+            logger.lifecycle("==========================================================")
+        } else {
+            logger.lifecycle("Keystore file does not exist at: ${keystoreFile.absolutePath}")
+        }
+    }
 }
