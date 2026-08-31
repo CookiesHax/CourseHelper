@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import java.util.Date
+import java.text.SimpleDateFormat
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -30,6 +32,21 @@ fun getSecret(envName: String, propertyName: String = envName): String {
 
     // 最后使用 project 属性或默认值兜底
     return (project.findProperty(propertyName) as? String) ?: ""
+}
+
+fun getGitHash(): String {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            .directory(rootProject.projectDir)
+            .start()
+        process.inputStream.bufferedReader().readText().trim().ifEmpty { "unknown" }
+    } catch (_: Exception) {
+        "unknown"
+    }
+}
+
+fun getBuildDate(): String {
+    return SimpleDateFormat("yyyyMMdd").format(Date())
 }
 
 // OpenCV 自动化 Task 配置
@@ -165,7 +182,9 @@ android {
         minSdk = 29
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = getBuildDate()
+
+        buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
 
         manifestPlaceholders["appName"] = "CourseHelper"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

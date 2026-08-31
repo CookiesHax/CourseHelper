@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.cookieshax.coursehelper.BuildConfig
 import com.cookieshax.coursehelper.feature.settings.ui.items.ClickableSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
 
@@ -51,6 +52,18 @@ fun AboutSection() {
                 subtitle = "CookiesHax",
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, "https://github.com/CookiesHax".toUri())
+                    context.startActivity(intent)
+                }
+            )
+
+            ClickableSettingItem(
+                title = "版本",
+                subtitle = "${BuildConfig.VERSION_NAME}.${BuildConfig.GIT_HASH}-${BuildConfig.DEBUG.let { if (it) "debug" else "release" }}",
+                onClick = {
+                    val intent = Intent(
+                        Intent.ACTION_VIEW,
+                        "https://github.com/CookiesHax/CourseHelper/commit/${BuildConfig.GIT_HASH}".toUri()
+                    )
                     context.startActivity(intent)
                 }
             )
