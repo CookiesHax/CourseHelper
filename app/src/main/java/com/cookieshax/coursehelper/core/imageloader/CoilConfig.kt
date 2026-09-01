@@ -43,7 +43,7 @@ object CoilConfig {
                         val requestBuilder = originalRequest.newBuilder()
 
                         // 添加与 NetworkClient 相同的请求头
-                        requestBuilder.addHeader("User-Agent", NetworkClient.getUserAgent())
+                        requestBuilder.addHeader("User-Agent", runBlocking { NetworkClient.getUserAgent() })
                         requestBuilder.addHeader("Accept-Language", "zh_CN")
                         requestBuilder.addHeader("Connection", "keep-alive")
 

@@ -15,6 +15,7 @@ import android.webkit.GeolocationPermissions
 import androidx.compose.runtime.MutableState
 import com.cookieshax.coursehelper.R
 import com.cookieshax.coursehelper.core.network.NetworkClient
+import kotlinx.coroutines.runBlocking
 
 object WebViewConfigurator {
     // 配置 WebView 的基础设置
@@ -32,7 +33,7 @@ object WebViewConfigurator {
             setSupportZoom(true)
             textZoom = 100 // 防止系统字体大小影响
             layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL // 禁用自动调整视图
-            userAgentString = NetworkClient.getUserAgent()
+            userAgentString = runBlocking { NetworkClient.getUserAgent() }
         }
     }
 
@@ -41,7 +42,7 @@ object WebViewConfigurator {
             // xuexi365.com 不改变 UA (使用系统默认)
             webView.settings.userAgentString = null
         } else {
-            webView.settings.userAgentString = NetworkClient.getUserAgent()
+            webView.settings.userAgentString = runBlocking { NetworkClient.getUserAgent() }
         }
     }
 

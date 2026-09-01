@@ -10,8 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 import com.cookieshax.coursehelper.BuildConfig
@@ -21,8 +21,7 @@ import com.cookieshax.coursehelper.core.info.DeviceInfo
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.core.utils.Constant
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
-import java.net.URLEncoder
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -33,6 +32,7 @@ import okhttp3.Request
 import okhttp3.Response
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import java.io.File
+import java.io.IOException
 
 private val Context.networkDataStore: DataStore<Preferences> by preferencesDataStore(name = "network_config")
 
@@ -69,7 +69,7 @@ object NetworkClient {
 
             // 构建全局 Header Map
             val globalHeaders = mapOf(
-                "User-Agent" to getOrGenerateUserAgent(),
+                "User-Agent" to getOrGenerateUserAgentSync(),
                 "Accept-Language" to "zh_CN",
                 "Connection" to "keep-alive"
             )
@@ -101,7 +101,17 @@ object NetworkClient {
         })
         .build()
 
-    fun getUserAgent(): String = getOrGenerateUserAgent()
+    suspend fun getUserAgent(): String = withContext(Dispatchers.IO) {
+        getOrGenerateUserAgentSync()
+    }
+
+    // 预热缓存 在 Application 中调用
+    fun preheat() {
+        CoroutineScope(Dispatchers.IO).launch {
+            getOrGenerateUserAgentSync()
+            getOrGenerateIdSync()
+        }
+    }
 
     fun clearUserAgentCache() {
         cachedUserAgent = null
@@ -114,21 +124,7 @@ object NetworkClient {
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
-        // 构建带参数的 URL
-        val requestUrl = if (!params.isNullOrEmpty()) {
-            val existingUrl =
-                url.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid URL: $url")
-            val newUrlBuilder = existingUrl.newBuilder()
-            params.forEach { (key, value) ->
-                if (value != null) {
-                    newUrlBuilder.addQueryParameter(key, value.toString())
-                }
-            }
-            newUrlBuilder.build().toString()
-        } else {
-            url
-        }
-
+        val requestUrl = buildUrl(url, params)
         return performRequest(requestUrl, headers, asUser) { builder -> builder.get() }
     }
 
@@ -138,20 +134,7 @@ object NetworkClient {
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<ByteArray> {
-        // 构建带参数的URL
-        val requestUrl = if (!params.isNullOrEmpty()) {
-            val existingUrl = url.toHttpUrl()
-            val newUrlBuilder = existingUrl.newBuilder()
-            params.forEach { (key, value) ->
-                if (value != null) {
-                    newUrlBuilder.addQueryParameter(key, value.toString())
-                }
-            }
-            newUrlBuilder.build().toString()
-        } else {
-            url
-        }
-
+        val requestUrl = buildUrl(url, params)
         return performRequest(
             requestUrl,
             headers,
@@ -167,26 +150,14 @@ object NetworkClient {
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
-        // 构建带参数的 URL
-        val requestUrl = if (!params.isNullOrEmpty()) {
-            val existingUrl = url.toHttpUrl()
-            val newUrlBuilder = existingUrl.newBuilder()
-            params.forEach { (key, value) ->
-                if (value != null) {
-                    newUrlBuilder.addQueryParameter(key, value.toString())
-                }
-            }
-            newUrlBuilder.build().toString()
-        } else {
-            url
-        }
+        val requestUrl = buildUrl(url, params)
 
         return performRequest(requestUrl, headers, asUser) { builder ->
-            val formBody = bodyMap.map { (key, value) ->
-                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value.toString(), "UTF-8")}"
-            }.joinToString("&")
-            val mediaType = "application/x-www-form-urlencoded".toMediaType()
-            builder.post(formBody.toRequestBody(mediaType))
+            val formBodyBuilder = FormBody.Builder()
+            bodyMap.forEach { (key, value) ->
+                formBodyBuilder.add(key, value.toString())
+            }
+            builder.post(formBodyBuilder.build())
         }
     }
 
@@ -197,17 +168,7 @@ object NetworkClient {
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
-        val requestUrl = if (!params.isNullOrEmpty()) {
-            val urlBuilder = url.toHttpUrl().newBuilder()
-            params.forEach { (k, v) ->
-                if (v != null) {
-                    urlBuilder.addQueryParameter(k, v.toString())
-                }
-            }
-            urlBuilder.build().toString()
-        } else {
-            url
-        }
+        val requestUrl = buildUrl(url, params)
 
         return performRequest(requestUrl, headers, asUser) { builder ->
             val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -228,13 +189,26 @@ object NetworkClient {
         }
     }
 
-    private fun getOrGenerateId(): String {
+    private fun buildUrl(url: String, params: Map<String, Any?>?): String {
+        if (params.isNullOrEmpty()) return url
+        val existingUrl =
+            url.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid URL: $url")
+        val newUrlBuilder = existingUrl.newBuilder()
+        params.forEach { (key, value) ->
+            if (value != null) {
+                newUrlBuilder.addQueryParameter(key, value.toString())
+            }
+        }
+        return newUrlBuilder.build().toString()
+    }
+
+    private fun getOrGenerateIdSync(): String {
         cachedId?.let { return it }
         return synchronized(this) {
             cachedId?.let { return@synchronized it }
 
             val key = stringPreferencesKey("unique_device_id")
-            // 此时在请求流或者具体调用中 用 runBlocking 也是在 OkHttp 的子线程 安全可控
+            // 此时在 OkHttp 的子线程中调用 runBlocking 是安全的
             val savedId = runBlocking { context.networkDataStore.data.first()[key] }
 
             val id = if (savedId != null) {
@@ -253,7 +227,7 @@ object NetworkClient {
         }
     }
 
-    private fun getOrGenerateUserAgent(): String {
+    private fun getOrGenerateUserAgentSync(): String {
         cachedUserAgent?.let { return it }
         return synchronized(this) {
             cachedUserAgent?.let { return@synchronized it }
@@ -281,7 +255,7 @@ object NetworkClient {
         val systemAgent = config["systemHttpAgent"]!!
 
         // 获取安全的唯一标识 ID
-        val currentId = getOrGenerateId()
+        val currentId = getOrGenerateIdSync()
 
         val userAgentTemp =
             "(device:$device) Language/zh_CN com.chaoxing.mobile/ChaoXingStudy_${productId}_${version}_android_phone_${versionCode}_${apiVersion} (@Kalimdor)_$currentId"
@@ -328,8 +302,10 @@ object NetworkClient {
             } else {
                 ApiResult.Error("Empty response body")
             }
+        } catch (e: IOException) {
+            ApiResult.Error("Network error: ${e.message}")
         } catch (e: Exception) {
-            ApiResult.Error(e.message ?: "Network error")
+            ApiResult.Error("Unexpected error: ${e.message}")
         }
     }
 }
