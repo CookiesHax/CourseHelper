@@ -7,6 +7,7 @@ import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
 import com.cookieshax.coursehelper.feature.course.model.CourseRepository
+import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -32,6 +33,16 @@ class CourseViewModel(application: Application) : AndroidViewModel(application) 
     private val _loadedAccountId = MutableStateFlow<String?>(null)
     val loadedAccountId: StateFlow<String?> = _loadedAccountId
 
+    init {
+        // 自动监听账号切换
+        // 切换时立刻立刻 fetch 课程列表
+        viewModelScope.launch {
+            AccountRepository.activeAccountIdFlow.collect { accountId ->
+                onAccountChanged(accountId)
+            }
+        }
+    }
+
     // 账号切换时调用 立即重置状态防止渲染过期数据 再加载新课程
     suspend fun onAccountChanged(accountId: String?) {
         if (accountId == null) {
@@ -45,10 +56,20 @@ class CourseViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
+        // 尝试从 Repository 获取内存缓存
+        val cached = CourseRepository.getCachedCourses(accountId)
+        if (cached != null) {
+            _uiState.value = CourseState.Success(cached)
+            _loadedAccountId.value = accountId
+            // 后台静默刷新
+            fetchCourses(accountId)
+            return
+        }
+
         // 立即清除旧数据 避免切回页面时闪一帧旧内容
         _uiState.value = CourseState.Loading
         _loadedAccountId.value = accountId
-        fetchCourses()
+        fetchCourses(accountId)
     }
 
     // 下拉刷新等场景调用
@@ -70,7 +91,7 @@ class CourseViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         _loadedAccountId.value = accountId
-        fetchCourses()
+        fetchCourses(accountId)
     }
 
     fun refreshCourses(accountId: String?) {
@@ -88,9 +109,9 @@ class CourseViewModel(application: Application) : AndroidViewModel(application) 
         CourseRepository.saveCourse(course)
     }
 
-    private suspend fun fetchCourses() {
+    private suspend fun fetchCourses(accountId: String) {
         val showUnnecessaryCourses = settingsRepository.showUnnecessaryCourses.first()
-        when (val result = CourseRepository.getCourses(showUnnecessaryCourses)) {
+        when (val result = CourseRepository.fetchCourses(accountId, showUnnecessaryCourses)) {
             is ApiResult.Success -> _uiState.value = CourseState.Success(result.data)
             is ApiResult.Error -> _uiState.value = CourseState.Error(result.message)
         }

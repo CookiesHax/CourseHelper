@@ -67,6 +67,7 @@ import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.account.ui.components.AccountTabContent
 import com.cookieshax.coursehelper.feature.course.ui.CourseTabContent
+import com.cookieshax.coursehelper.feature.course.viewmodel.CourseViewModel
 import com.cookieshax.coursehelper.feature.login.LoginType
 import com.cookieshax.coursehelper.ui.items.IcTags
 import com.cookieshax.coursehelper.ui.items.SearchInput
@@ -83,6 +84,7 @@ enum class MainTab {
 @Composable
 fun MainScreen(navController: NavController) {
     val mainViewModel: MainViewModel = viewModel()
+    val courseViewModel: CourseViewModel = viewModel()
     val scope = rememberCoroutineScope()
 
     val activeAccountId by mainViewModel.activeAccountId.collectAsState()
@@ -384,7 +386,8 @@ fun MainScreen(navController: NavController) {
                             CourseTabContent(
                                 activeAccountId,
                                 navController = navController,
-                                searchQuery = debouncedSearchQuery
+                                searchQuery = debouncedSearchQuery,
+                                viewModel = courseViewModel
                             )
                         }
                     }

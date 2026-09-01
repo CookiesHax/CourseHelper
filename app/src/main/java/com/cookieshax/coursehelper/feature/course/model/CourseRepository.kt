@@ -8,10 +8,16 @@ import kotlinx.coroutines.coroutineScope
 
 object CourseRepository {
     private val courseMap = mutableMapOf<String, Course>()
+    private val accountCoursesCache = mutableMapOf<String, List<Course>>()
 
-    suspend fun getCourses(showUnnecessaryCourses: Boolean = false): ApiResult<List<Course>> {
+    fun getCachedCourses(accountId: String): List<Course>? = accountCoursesCache[accountId]
+
+    suspend fun fetchCourses(
+        accountId: String,
+        showUnnecessaryCourses: Boolean = false
+    ): ApiResult<List<Course>> {
         return try {
-            when (val result = ApiManager.getCourses()) {
+            when (val result = ApiManager.getCourses(accountId)) {
                 is ApiResult.Success -> {
                     val data = StringUtils.parseJson(result.data)
                     if (data == null) {
@@ -24,6 +30,7 @@ object CourseRepository {
                             val courses = Course.fromApiResponse(data, showUnnecessaryCourses)
                             // 自动更新缓存
                             courses.forEach { courseMap[it.courseId] = it }
+                            accountCoursesCache[accountId] = courses
                             ApiResult.Success(courses)
                         } else {
                             ApiResult.Error(msg)

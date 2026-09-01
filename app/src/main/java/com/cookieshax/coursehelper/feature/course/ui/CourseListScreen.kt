@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -54,11 +53,6 @@ fun CourseTabContent(
     }
 
     val pullToRefreshState = rememberPullToRefreshState()
-
-    // 账号切换时立即清除过期数据 避免切回课程页时闪一帧旧数据
-    LaunchedEffect(selectedAccountId) {
-        viewModel.onAccountChanged(selectedAccountId)
-    }
 
     // UI
     PullToRefreshBox(

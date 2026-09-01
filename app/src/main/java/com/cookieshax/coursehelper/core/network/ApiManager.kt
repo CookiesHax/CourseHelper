@@ -204,8 +204,11 @@ object ApiManager {
     }
 
     // Course
-    suspend fun getCourses(): ApiResult<String> {
-        return NetworkClient.get("https://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&getTchClazzType=1&mcode=")
+    suspend fun getCourses(asUser: String? = AccountRepository.activeAccountIdFlow.value): ApiResult<String> {
+        return NetworkClient.get(
+            "https://mooc1-api.chaoxing.com/mycourse/backclazzdata?view=json&getTchClazzType=1&mcode=",
+            asUser = asUser
+        )
     }
 
     suspend fun getJoinClassTime(course: Course): String? {
