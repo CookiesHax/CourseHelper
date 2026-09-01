@@ -4,17 +4,19 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.view.ViewGroup
+import android.webkit.GeolocationPermissions
+import android.webkit.RenderProcessGoneDetail
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.ValueCallback
-import android.net.Uri
-import android.webkit.GeolocationPermissions
 import androidx.compose.runtime.MutableState
 import com.cookieshax.coursehelper.R
 import com.cookieshax.coursehelper.core.network.NetworkClient
+import com.cookieshax.coursehelper.core.utils.showToast
 import kotlinx.coroutines.runBlocking
 
 object WebViewConfigurator {
@@ -46,6 +48,7 @@ object WebViewConfigurator {
         }
     }
 
+    @SuppressLint("MissingOnRenderProcessGone")
     fun createWebViewClient(
         isLoading: MutableState<Boolean>,
         fixLayoutJs: String,
@@ -72,6 +75,25 @@ object WebViewConfigurator {
                         view?.evaluateJavascript(fixLayoutJs, null)
                     }
                 }
+            }
+
+            override fun onRenderProcessGone(
+                view: WebView?,
+                detail: RenderProcessGoneDetail
+            ): Boolean {
+                // 记录崩溃详细信息以进行调试
+                if (detail.didCrash()) {
+                    "由于内部错误，渲染进程崩溃".showToast()
+                } else {
+                    "渲染进程被系统杀死".showToast()
+                }
+
+                // 从视图层次结构中移除崩溃的 WebView 实例
+                view?.destroy()
+
+                // 返回 true 以信号代表处理了崩溃
+                // Returning false will still crash the app.
+                return true
             }
         }
     }
