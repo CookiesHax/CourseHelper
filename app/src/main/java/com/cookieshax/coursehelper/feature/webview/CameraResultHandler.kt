@@ -5,10 +5,10 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.utils.FileUtils
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 
 object CameraResultHandler {
@@ -23,17 +23,17 @@ object CameraResultHandler {
             }
 
             objectId?.let { id ->
-                val filesArray = JSONArray().apply {
-                    val fileObj = JSONObject().apply {
-                        put("name", imageFile.name)
-                        put("objectid", id)
-                        put("type", imageFile.extension)
+                val filesArray = JsonArray().apply {
+                    val fileObj = JsonObject().apply {
+                        addProperty("name", imageFile.name)
+                        addProperty("objectid", id)
+                        addProperty("type", imageFile.extension)
                     }
-                    put(fileObj)
+                    add(fileObj)
                 }
 
-                val rootJson = JSONObject().apply {
-                    put("files", filesArray.toString())
+                val rootJson = JsonObject().apply {
+                    addProperty("files", filesArray.toString())
                 }
 
                 Log.d("CameraResultHandler", rootJson.toString())

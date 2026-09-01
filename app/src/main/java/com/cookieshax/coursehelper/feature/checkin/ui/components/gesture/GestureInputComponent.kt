@@ -13,10 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
+import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getIntOrDefault
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -53,7 +54,7 @@ fun GestureInputComponent(
                     viewModel.updateGesture(gesturePoints, false, GestureResult.Idle)
                     val result = ApiManager.checkSignCode(taskId, code)
                     val isSuccess = (result is ApiResult.Success)
-                            && JSONObject(result.data).optInt("result") == 1
+                            && StringUtils.parseJson(result.data)?.getIntOrDefault("result", 0) == 1
 
                     if (!isSuccess) {
                         viewModel.updateGesture(gesturePoints, false, GestureResult.Failure)

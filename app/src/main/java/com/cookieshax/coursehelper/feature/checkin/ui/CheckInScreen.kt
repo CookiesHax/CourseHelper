@@ -49,6 +49,13 @@ import com.cookieshax.coursehelper.app.navigation.MapRoute
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
+import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getDoubleOrDefault
+import com.cookieshax.coursehelper.core.utils.getIntOrDefault
+import com.cookieshax.coursehelper.core.utils.getLongOrDefault
+import com.cookieshax.coursehelper.core.utils.getAsJsonObjectOrNull
+import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
+import com.cookieshax.coursehelper.core.utils.getStringOrNull
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.checkin.ui.components.CheckInLayout
@@ -64,7 +71,6 @@ import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.ui.items.Placeholder
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 sealed class CheckInType {
     object Normal : CheckInType()
@@ -139,40 +145,36 @@ fun CheckInScreen(
         when (val response = ApiManager.getCheckInTaskInfo(taskId)) {
             is ApiResult.Success -> {
                 rawTaskInfo.value = response.data
-                val dataObject = JSONObject(response.data).optJSONObject("data")
+                val rootObject = StringUtils.parseJson(response.data)
+                val dataObject = rootObject?.getAsJsonObjectOrNull("data")
                 if (dataObject != null) {
                     // 兼容字符串形式的经纬度
-                    var lat =
-                        dataObject.optString("locationLatitude", "0.0").toDoubleOrNull() ?: 0.0
-                    var lng =
-                        dataObject.optString("locationLongitude", "0.0").toDoubleOrNull() ?: 0.0
+                    var lat = dataObject.getDoubleOrDefault("locationLatitude", 0.0)
+                    var lng = dataObject.getDoubleOrDefault("locationLongitude", 0.0)
 
                     // 如果外层没有拿到有效经纬度 尝试从内层 timer 对象获取
                     if (lat == 0.0 || lng == 0.0) {
-                        val timerObject = dataObject.optJSONObject("timer")
+                        val timerObject = dataObject.getAsJsonObjectOrNull("timer")
                         if (timerObject != null) {
-                            lat = timerObject.optString("locationLatitude", "0.0").toDoubleOrNull()
-                                ?: 0.0
-                            lng = timerObject.optString("locationLongitude", "0.0").toDoubleOrNull()
-                                ?: 0.0
+                            lat = timerObject.getDoubleOrDefault("locationLatitude", 0.0)
+                            lng = timerObject.getDoubleOrDefault("locationLongitude", 0.0)
                         }
                     }
 
                     // 如果依然没有 最后尝试从 content 字符串中解析
-                    if ((lat == 0.0 || lng == 0.0) && !dataObject.isNull("content")) {
+                    val contentStr = dataObject.getStringOrNull("content")
+                    if ((lat == 0.0 || lng == 0.0) && contentStr != null) {
                         try {
-                            val contentObject = JSONObject(dataObject.optString("content", "{}"))
-                            val contentTimer = contentObject.optJSONObject("timer")
-                            if (contentTimer != null) {
-                                lat = contentTimer.optString("locationLatitude", "0.0")
-                                    .toDoubleOrNull() ?: 0.0
-                                lng = contentTimer.optString("locationLongitude", "0.0")
-                                    .toDoubleOrNull() ?: 0.0
-                            } else {
-                                lat = contentObject.optString("locationLatitude", "0.0")
-                                    .toDoubleOrNull() ?: 0.0
-                                lng = contentObject.optString("locationLongitude", "0.0")
-                                    .toDoubleOrNull() ?: 0.0
+                            val contentObject = StringUtils.parseJson(contentStr)
+                            if (contentObject != null) {
+                                val contentTimer = contentObject.getAsJsonObjectOrNull("timer")
+                                if (contentTimer != null) {
+                                    lat = contentTimer.getDoubleOrDefault("locationLatitude", 0.0)
+                                    lng = contentTimer.getDoubleOrDefault("locationLongitude", 0.0)
+                                } else {
+                                    lat = contentObject.getDoubleOrDefault("locationLatitude", 0.0)
+                                    lng = contentObject.getDoubleOrDefault("locationLongitude", 0.0)
+                                }
                             }
                         } catch (e: Exception) { // 防止 content 字符串格式化失败导致崩溃
                             e.printStackTrace()
@@ -180,24 +182,25 @@ fun CheckInScreen(
                     }
 
                     checkInState.value = checkInState.value.copy(
-                        otherId = dataObject.optString("otherId", ""),
-                        ifNeedVCode = dataObject.optInt("ifNeedVCode", 0),
-                        openCheckFaceFlag = dataObject.optInt("openCheckFaceFlag", 0),
-                        starttime = dataObject.optLong("starttime", 0L),
-                        endTime = dataObject.optLong("endTime", 0L),
-                        signInId = dataObject.optLong("signInId", 0L),
-                        signOutId = dataObject.optLong("signOutId", 0L),
-                        signOutPublishTimeStamp = dataObject.optLong("signOutPublishTimeStamp", 0L),
+                        otherId = dataObject.getStringOrEmpty("otherId"),
+                        ifNeedVCode = dataObject.getIntOrDefault("ifNeedVCode", 0),
+                        openCheckFaceFlag = dataObject.getIntOrDefault("openCheckFaceFlag", 0),
+                        starttime = dataObject.getLongOrDefault("starttime", 0L),
+                        endTime = dataObject.getLongOrDefault("endTime", 0L),
+                        signInId = dataObject.getLongOrDefault("signInId", 0L),
+                        signOutId = dataObject.getLongOrDefault("signOutId", 0L),
+                        signOutPublishTimeStamp = dataObject.getLongOrDefault(
+                            "signOutPublishTimeStamp",
+                            0L
+                        ),
                         locationLatitude = lat,
                         locationLongitude = lng,
-                        locationRange = dataObject.optDouble("locationRange", .0),
-                        locationText =
-                            if (dataObject.isNull("locationText")) "" // filter "null"
-                            else dataObject.optString("locationText", ""),
-                        ifphoto = dataObject.optInt("ifphoto", 0),
-                        ifopenAddress = dataObject.optInt("ifopenAddress", 0),
-                        ifrefreshewm = dataObject.optInt("ifrefreshewm", 0),
-                        numberCount = dataObject.optInt("numberCount", 0)
+                        locationRange = dataObject.getDoubleOrDefault("locationRange", 0.0),
+                        locationText = dataObject.getStringOrEmpty("locationText"),
+                        ifphoto = dataObject.getIntOrDefault("ifphoto", 0),
+                        ifopenAddress = dataObject.getIntOrDefault("ifopenAddress", 0),
+                        ifrefreshewm = dataObject.getIntOrDefault("ifrefreshewm", 0),
+                        numberCount = dataObject.getIntOrDefault("numberCount", 0)
                     )
                 }
             }
@@ -437,7 +440,7 @@ fun CheckInScreen(
         val scope = rememberCoroutineScope()
         val formattedJson = remember(rawTaskInfo.value) {
             try {
-                JSONObject(rawTaskInfo.value).toString(4)
+                StringUtils.prettyGson.toJson(StringUtils.parseJson(rawTaskInfo.value))
             } catch (_: Exception) {
                 rawTaskInfo.value
             }

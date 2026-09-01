@@ -2,7 +2,9 @@ package com.cookieshax.coursehelper.feature.checkin.model
 
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
-import org.json.JSONObject
+import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getAsJsonObjectOrNull
+import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
 import java.util.concurrent.ConcurrentHashMap
 
 sealed class CheckInParams {
@@ -120,9 +122,9 @@ class QrCodeCheckInStrategy : CheckInStrategy {
             } else {
                 val result = ApiManager.getUserFaceId(uid)
                 if (result is ApiResult.Success) {
-                    val json = JSONObject(result.data)
-                    val data = json.optJSONObject("data")
-                    val faceUrl = data?.optString("http", "") ?: ""
+                    val json = StringUtils.parseJson(result.data)
+                    val data = json?.getAsJsonObjectOrNull("data")
+                    val faceUrl = data?.getStringOrEmpty("http") ?: ""
                     when (val uploadResult = ApiManager.uploadModifiedFace(faceUrl, uid)) {
                         is ApiResult.Success -> {
                             faceId = uploadResult.data
@@ -179,9 +181,9 @@ class LocationCheckInStrategy : CheckInStrategy {
             } else {
                 val result = ApiManager.getUserFaceId(uid)
                 if (result is ApiResult.Success) {
-                    val json = JSONObject(result.data)
-                    val data = json.optJSONObject("data")
-                    val faceUrl = data?.optString("http", "") ?: ""
+                    val json = StringUtils.parseJson(result.data)
+                    val data = json?.getAsJsonObjectOrNull("data")
+                    val faceUrl = data?.getStringOrEmpty("http") ?: ""
                     when (val uploadResult = ApiManager.uploadModifiedFace(faceUrl, uid)) {
                         is ApiResult.Success -> {
                             faceId = uploadResult.data

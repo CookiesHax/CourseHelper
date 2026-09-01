@@ -10,17 +10,19 @@ import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
 import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getAsJsonObjectOrNull
+import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.json.JSONException
-import org.json.JSONObject
 import kotlin.time.Duration.Companion.seconds
 
 class JsBridgeHandlers(
@@ -74,14 +76,14 @@ class JsBridgeHandlers(
                     else -> {}
                 }
 
-                val userInfoJson = JSONObject().apply {
-                    put("uid", currentAccount.uid)
-                    put("fid", fid)
-                    put("name", currentAccount.name)
-                    put("schoolName", schoolName)
-                    put("className", className)
-                    put("role", "student")
-                    put("avatar", currentAccount.avatarUrl)
+                val userInfoJson = JsonObject().apply {
+                    addProperty("uid", currentAccount.uid)
+                    addProperty("fid", fid)
+                    addProperty("name", currentAccount.name)
+                    addProperty("schoolName", schoolName)
+                    addProperty("className", className)
+                    addProperty("role", "student")
+                    addProperty("avatar", currentAccount.avatarUrl)
                 }
 
                 jsBridgeInterface.sendMessageToWebView(
@@ -104,8 +106,8 @@ class JsBridgeHandlers(
 
     private fun handleOpenUrl(paramsJson: String) {
         try {
-            val params = JSONObject(paramsJson)
-            val webUrl = params.optString("webUrl", "")
+            val params = StringUtils.parseJson(paramsJson)
+            val webUrl = params?.getStringOrEmpty("webUrl") ?: ""
 
             if (webUrl.isNotEmpty()) {
                 onOpenUrl(webUrl)
@@ -183,8 +185,8 @@ class JsBridgeHandlers(
     private fun handleDeviceFlag() {
         EncryptionUtils.getDeviceCode().let { deviceCode ->
             // 设备码是纯字符串 用 JSON 字符串包装
-            val json = JSONObject().apply {
-                put("flagInfo", deviceCode)
+            val json = JsonObject().apply {
+                addProperty("flagInfo", deviceCode)
             }
             jsBridgeInterface.sendMessageToWebView("CLIENT_DEVICE_FLAG", json.toString())
         }
@@ -206,11 +208,11 @@ class JsBridgeHandlers(
                 else -> {}
             }
 
-            val faceJson = JSONObject().apply {
-                put("result", 1)
-                put("LiveDetectionStatus", 1)
-                put("collectStatus", 1)
-                put("currentFaceId", faceId)
+            val faceJson = JsonObject().apply {
+                addProperty("result", 1)
+                addProperty("LiveDetectionStatus", 1)
+                addProperty("collectStatus", 1)
+                addProperty("currentFaceId", faceId)
             }
 
             jsBridgeInterface.sendMessageToWebView(
@@ -221,21 +223,21 @@ class JsBridgeHandlers(
     }
 
     private fun handleLoginStatus() {
-        val json = JSONObject()
+        val json = JsonObject()
 
         val currentAccount = AccountRepository.activeAccountFlow.value
         if (currentAccount == null) {
             json.apply {
-                put("status", "0")
-                put("message", "not logged in")
+                addProperty("status", "0")
+                addProperty("message", "not logged in")
             }
         } else {
             json.apply {
-                put("status", "1")
-                put("message", "success")
-                put("data", JSONObject().apply {
-                    put("uid", currentAccount.uid)
-                    put("name", currentAccount.name)
+                addProperty("status", "1")
+                addProperty("message", "success")
+                add("data", JsonObject().apply {
+                    addProperty("uid", currentAccount.uid)
+                    addProperty("name", currentAccount.name)
                 })
             }
         }
@@ -247,8 +249,8 @@ class JsBridgeHandlers(
     }
 
     private fun handleClientDisplayMessage(paramsJson: String) {
-        val params = JSONObject(paramsJson)
-        val message = params.optString("message", "")
+        val params = StringUtils.parseJson(paramsJson)
+        val message = params?.getStringOrEmpty("message") ?: ""
         if (message.isNotBlank()) {
             message.showToast()
         }
@@ -256,21 +258,21 @@ class JsBridgeHandlers(
 
     private fun handleClientOpenRes(paramsJson: String) {
         try {
-            val params = JSONObject(paramsJson)
+            val params = StringUtils.parseJson(paramsJson)
 
-            val content = params.optJSONObject("content")
-            val course = content?.optJSONObject("course")
-            val dataArray = course?.optJSONArray("data")
+            val content = params?.getAsJsonObjectOrNull("content")
+            val course = content?.getAsJsonObjectOrNull("course")
+            val dataArray = course?.get("data") as? JsonArray
 
-            val firstCourse = dataArray?.optJSONObject(0)
-            val courseId = firstCourse?.optString("id").orEmpty()
+            val firstCourse = dataArray?.get(0) as? JsonObject
+            val courseId = firstCourse?.getStringOrEmpty("id") ?: ""
 
             if (courseId.isNotEmpty()) {
                 navController?.navigate(CourseTaskRoute(courseId = courseId))
             } else {
                 Log.e("WebViewScreen", "CLIENT_OPEN_RES: courseId is empty in params: $paramsJson")
             }
-        } catch (e: JSONException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }

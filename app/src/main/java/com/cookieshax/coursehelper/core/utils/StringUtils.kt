@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 object StringUtils {
     // 全局单例
     val gson: Gson = Gson()
+    val prettyGson: Gson = Gson().newBuilder().setPrettyPrinting().create()
 
     // 解析 JSON 响应为 JsonObject
     fun parseJson(json: String): JsonObject? {
@@ -60,5 +61,14 @@ fun JsonObject.getStringOrNull(key: String): String? =
 fun JsonObject.getIntOrDefault(key: String, default: Int): Int =
     if (has(key) && get(key).isJsonPrimitive) get(key).asInt else default
 
+fun JsonObject.getLongOrDefault(key: String, default: Long): Long =
+    if (has(key) && get(key).isJsonPrimitive) get(key).asLong else default
+
+fun JsonObject.getDoubleOrDefault(key: String, default: Double): Double =
+    if (has(key) && get(key).isJsonPrimitive) get(key).asDouble else default
+
 fun JsonObject.getBooleanOrDefault(key: String, default: Boolean): Boolean =
     if (has(key) && get(key).isJsonPrimitive) get(key).asBoolean else default
+
+fun JsonObject.getAsJsonObjectOrNull(key: String): JsonObject? =
+    if (has(key) && get(key).isJsonObject) get(key).asJsonObject else null

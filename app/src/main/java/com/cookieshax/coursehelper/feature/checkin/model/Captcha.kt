@@ -4,9 +4,17 @@ import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.utils.Constant
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
+import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getBooleanOrDefault
+import com.cookieshax.coursehelper.core.utils.getIntOrDefault
+import com.cookieshax.coursehelper.core.utils.getLongOrDefault
+import com.cookieshax.coursehelper.core.utils.getStringOrDefault
+import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
+import com.cookieshax.coursehelper.core.utils.getStringOrNull
+import com.cookieshax.coursehelper.core.utils.getAsJsonObjectOrNull
+import com.google.gson.JsonObject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import org.json.JSONObject
 
 data class Captcha(
     val uid: String,
@@ -34,8 +42,11 @@ data class Captcha(
         }
 
         try {
-            val confJson = parseJson(confResp.data)
-            val t = confJson.getLong("t")
+            val confJson = extractPayload(confResp.data) ?: return@coroutineScope this@Captcha.copy(
+                errorMessage = "解析配置数据失败",
+                isLoaded = false
+            )
+            val t = confJson.getLongOrDefault("t", 0L)
             val captchaKey = EncryptionUtils.md5Hash("$t$uuid")
             val expirationTime = t + 300000
             val currentToken =
@@ -46,11 +57,14 @@ data class Captcha(
             val imgResp =
                 ApiManager.getCaptchaImageUrl(captchaKey, currentToken, referer, currentIv, uid)
             if (imgResp is ApiResult.Success) {
-                val imgJson = parseJson(imgResp.data)
-                val vo = imgJson.optJSONObject("imageVerificationVo")
-                val bgUrl = vo?.optString("shadeImage", "") ?: ""
-                val sliceUrl = vo?.optString("cutoutImage", "") ?: ""
-                val finalToken = imgJson.optString("token", currentToken)
+                val imgJson = extractPayload(imgResp.data) ?: return@coroutineScope this@Captcha.copy(
+                    errorMessage = "解析图片数据失败",
+                    isLoaded = false
+                )
+                val vo = imgJson.getAsJsonObjectOrNull("imageVerificationVo")
+                val bgUrl = vo?.getStringOrEmpty("shadeImage") ?: ""
+                val sliceUrl = vo?.getStringOrEmpty("cutoutImage") ?: ""
+                val finalToken = imgJson.getStringOrDefault("token", currentToken)
 
                 val bgDeferred = async { ApiManager.downloadImage(bgUrl, uid) }
                 val sliceDeferred = async { ApiManager.downloadImage(sliceUrl, uid) }
@@ -90,12 +104,13 @@ data class Captcha(
         )
         return if (resultResp is ApiResult.Success) {
             try {
-                val json = parseJson(resultResp.data)
-                if (json.optInt("error") == 0 && json.optBoolean("result")) {
-                    val extraDataStr = json.optString("extraData")
-                    JSONObject(extraDataStr).optString("validate") to this
+                val json = extractPayload(resultResp.data) ?: return null to this.copy(isLoaded = false)
+                if (json.getIntOrDefault("error", -1) == 0 && json.getBooleanOrDefault("result", false)) {
+                    val extraDataStr = json.getStringOrNull("extraData")
+                    val validate = extraDataStr?.let { StringUtils.parseJson(it)?.getStringOrNull("validate") }
+                    validate to this
                 } else {
-                    val msg = json.optString("msg", "校验未通过")
+                    val msg = json.getStringOrDefault("msg", "校验未通过")
                     null to this.copy(errorMessage = msg, isLoaded = false)
                 }
             } catch (_: Exception) {
@@ -106,9 +121,16 @@ data class Captcha(
         }
     }
 
-    private fun parseJson(data: String): JSONObject {
-        val jsonString = data.substringAfter("(").substringBeforeLast(")")
-        return JSONObject(jsonString)
+    private fun extractPayload(data: String): JsonObject? {
+        if (data.isBlank()) return null
+        val start = data.indexOf('(')
+        val end = data.lastIndexOf(')')
+        val jsonString = if (start != -1 && end != -1 && start < end) {
+            data.substring(start + 1, end)
+        } else {
+            data
+        }
+        return StringUtils.parseJson(jsonString)
     }
 
     override fun equals(other: Any?): Boolean {

@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import androidx.compose.runtime.rememberCoroutineScope
+import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getIntOrDefault
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -46,7 +47,7 @@ fun CodeInputComponent(
                 scope.launch {
                     val result = ApiManager.checkSignCode(taskId, newValue)
                     val isSuccess = (result is ApiResult.Success) &&
-                            JSONObject(result.data).optInt("result") == 1
+                            StringUtils.parseJson(result.data)?.getIntOrDefault("result", 0) == 1
 
                     if (isSuccess) {
                         viewModel.updateCode(newValue, true, CodeInputResult.Success)

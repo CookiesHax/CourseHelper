@@ -7,10 +7,14 @@ import com.cookieshax.coursehelper.core.utils.Constant
 import com.cookieshax.coursehelper.core.utils.EncryptionUtils
 import com.cookieshax.coursehelper.core.utils.ImageUtils
 import com.cookieshax.coursehelper.core.utils.StringUtils
+import com.cookieshax.coursehelper.core.utils.getBooleanOrDefault
+import com.cookieshax.coursehelper.core.utils.getIntOrDefault
+import com.cookieshax.coursehelper.core.utils.getAsJsonObjectOrNull
+import com.cookieshax.coursehelper.core.utils.getStringOrDefault
+import com.cookieshax.coursehelper.core.utils.getStringOrNull
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.course.model.Course
 import com.cookieshax.coursehelper.feature.course.model.CourseTask
-import org.json.JSONObject
 import java.io.File
 
 object ApiManager {
@@ -303,9 +307,9 @@ object ApiManager {
         val tokenResult =
             NetworkClient.get("https://pan-yz.chaoxing.com/api/token/uservalid", asUser = userId)
         val token = when (tokenResult) {
-            is ApiResult.Success -> JSONObject(tokenResult.data).optString("_token")
+            is ApiResult.Success -> StringUtils.parseJson(tokenResult.data)?.getStringOrNull("_token")
             else -> return null
-        }
+        } ?: return null
 
         // CRC 秒传校验
         val crc = EncryptionUtils.getFileCRC32(file)
@@ -322,9 +326,9 @@ object ApiManager {
 
         // 秒传命中
         if (crcResult is ApiResult.Success) {
-            val crcJson = JSONObject(crcResult.data)
-            if (crcJson.optBoolean("result") && crcJson.optBoolean("exist")) {
-                return crcJson.optJSONObject("data")?.optString("objectid")
+            val crcJson = StringUtils.parseJson(crcResult.data)
+            if (crcJson?.getBooleanOrDefault("result", false) == true && crcJson.getBooleanOrDefault("exist", false)) {
+                return crcJson.getAsJsonObjectOrNull("data")?.getStringOrNull("objectid")
             }
         }
 
@@ -347,7 +351,7 @@ object ApiManager {
 
         return when (uploadResult) {
             is ApiResult.Success -> {
-                JSONObject(uploadResult.data).optJSONObject("data")?.optString("objectId")
+                StringUtils.parseJson(uploadResult.data)?.getAsJsonObjectOrNull("data")?.getStringOrNull("objectId")
             }
 
             else -> null
@@ -428,10 +432,10 @@ object ApiManager {
         when (resp) {
             is ApiResult.Success -> {
                 try {
-                    val json = JSONObject(resp.data)
-                    val status = json.optInt("status")
+                    val json = StringUtils.parseJson(resp.data)
+                    val status = json?.getIntOrDefault("status", 0)
                     return if (status == 1) {
-                        ApiResult.Success(json.optString("enc"))
+                        ApiResult.Success(json.getStringOrDefault("enc", ""))
                     } else {
                         ApiResult.Error("获取 faceEnc 失败: ${resp.data}")
                     }
