@@ -64,7 +64,7 @@ fun CourseSection(
                     SliderSettingItem(
                         title = "签到并发数",
                         value = checkInSemaphoreLimit,
-                        range = 1 .. 16,
+                        range = 1 .. 12,
                         onValueChange = onSetCheckInSemaphoreLimit,
                         onClick = { onOpenDialog(SettingsDialogOpen.CHECK_IN_SEMAPHORE) }
                     )
@@ -78,7 +78,7 @@ fun CourseSection(
                         SliderSettingItem(
                             title = "自动Captcha最大重试次数",
                             value = maxCaptchaRetries,
-                            range = 1 .. 5,
+                            range = 0 .. 5,
                             onValueChange = onSetMaxCaptchaRetries,
                             onClick = { onOpenDialog(SettingsDialogOpen.MAX_CAPTCHA_RETRIES) }
                         )

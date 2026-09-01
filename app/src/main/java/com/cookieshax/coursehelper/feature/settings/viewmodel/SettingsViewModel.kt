@@ -192,8 +192,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setCheckInSemaphoreLimit(limit: Int) {
+        val verifiedLomit = limit.coerceAtLeast(1)
         viewModelScope.launch {
-            repository.setCheckInSemaphoreLimit(limit)
+            repository.setCheckInSemaphoreLimit(verifiedLomit)
         }
     }
 
@@ -204,8 +205,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setMaxCaptchaRetries(retries: Int) {
+        val verifiedRetries = retries.coerceAtLeast(0)
         viewModelScope.launch {
-            repository.setMaxCaptchaRetries(retries)
+            repository.setMaxCaptchaRetries(verifiedRetries)
         }
     }
 

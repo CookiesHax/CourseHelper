@@ -144,7 +144,6 @@ fun SettingsScreen(navController: NavController) {
             SliderEditDialog(
                 title = "签到并发数",
                 value = checkInSemaphoreLimit,
-                range = 1..16,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setCheckInSemaphoreLimit(it)
@@ -157,7 +156,6 @@ fun SettingsScreen(navController: NavController) {
             SliderEditDialog(
                 title = "自动Captcha最大重试次数",
                 value = maxCaptchaRetries,
-                range = 1..5,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setMaxCaptchaRetries(it)

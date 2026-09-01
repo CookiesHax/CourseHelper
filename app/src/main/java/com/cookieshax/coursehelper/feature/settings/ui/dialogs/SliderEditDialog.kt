@@ -18,13 +18,12 @@ import androidx.compose.ui.text.input.KeyboardType
 fun SliderEditDialog(
     title: String,
     value: Int,
-    range: IntRange,
     onDismissRequest: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
     var textValue by remember { mutableStateOf(value.toString()) }
     val intValue = textValue.toIntOrNull()
-    val isValid = intValue != null && intValue in range
+    val isValid = intValue != null && intValue >= 0
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -37,7 +36,7 @@ fun SliderEditDialog(
                         textValue = newValue
                     }
                 },
-                label = { Text("数值 (${range.first} - ${range.last})") },
+                label = { Text("数值") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
