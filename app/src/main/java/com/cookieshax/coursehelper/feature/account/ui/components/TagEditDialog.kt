@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,11 +55,6 @@ fun TagEditDialog(
                 }
             }
         )
-    }
-    val selectedAccounts = remember(initialSelectedAccounts) {
-        mutableStateListOf<String>().apply {
-            addAll(initialSelectedAccounts)
-        }
     }
 
     AlertDialog(
@@ -127,7 +121,7 @@ fun TagEditDialog(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "此标签应用于${selectedAccounts.size}个账号",
+                            text = "此标签应用于${initialSelectedAccounts.size}个账号",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -146,7 +140,7 @@ fun TagEditDialog(
                     onConfirm(
                         tagName.trim(),
                         selectedColor.color.toArgb(),
-                        selectedAccounts.toList()
+                        initialSelectedAccounts
                     )
                 },
                 enabled = tagName.isNotBlank()

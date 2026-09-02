@@ -242,15 +242,14 @@ object AccountRepository {
     }
 
     suspend fun associateTagWithAccounts(tagId: Long, accountIds: List<String>) {
+        tagDao.clearTagAssociations(tagId)
         for (accountId in accountIds) {
             tagDao.insertAccountTagCrossRef(AccountTagCrossRef(accountId, tagId))
         }
     }
 
     suspend fun clearTagAssociations(tagId: Long) {
-        for (accountId in accountList.value.map { it.uid }) {
-            tagDao.removeTagFromAccount(accountId, tagId)
-        }
+        tagDao.clearTagAssociations(tagId)
     }
 
     // 清除所有元数据 (用于数据库重置等极端情况)

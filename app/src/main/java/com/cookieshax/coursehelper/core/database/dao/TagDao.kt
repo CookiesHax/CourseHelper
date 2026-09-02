@@ -43,6 +43,9 @@ interface TagDao {
     @Query("DELETE FROM account_tag_cross_ref WHERE uid = :uid")
     suspend fun clearAccountTags(uid: String)
 
+    @Query("DELETE FROM account_tag_cross_ref WHERE tagId = :tagId")
+    suspend fun clearTagAssociations(tagId: Long)
+
     @Query("SELECT MAX(`order`) FROM tags")
     suspend fun getMaxOrder(): Int?
 
