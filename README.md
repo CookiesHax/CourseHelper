@@ -19,7 +19,7 @@
 > [!IMPORTANT]
 > 您可以使用 Github Workflow 进行构建，请 [fork](https://github.com/CookiesHax/CourseHelper/fork)
 > 此仓库。
-> 在 Fork 的仓库中 进入 Settings -> Secrets and variables -> Actions -> New repository
+> 在 fork 的仓库中 进入 Settings -> Secrets and variables -> Actions -> New repository
 > secret，按照提示添加密钥。
 
 gradle 会优先在 `环境变量` 中查找签名配置，如果未找到则使用 `local.properties` 中的配置，如仍未找到则在
@@ -76,7 +76,19 @@ RELEASE_KEY_ALIAS_PASSWORD=你的密钥别名密码
 如果未提供上述签名配置，构建依然会以 Release 模式进行，但 Gradle 会自动回退使用 Debug 签名 对导出的
 APK 进行签名。
 
-构建产物位于 `app/build/outputs/apk` 目录下。
+### 4. 构建 Release 版本
+
+```bash
+cd CourseHelper
+
+# Linux / macOS
+./gradlew assembleRelease
+
+# Windows (CMD / PowerShell)
+.\gradlew.bat assembleRelease
+```
+
+构建产物位于 `app/build/outputs/apk/release` 目录下。
 
 ## 许可与免责声明
 
