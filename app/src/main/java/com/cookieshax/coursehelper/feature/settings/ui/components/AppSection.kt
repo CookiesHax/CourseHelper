@@ -15,6 +15,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeade
 
 @Composable
 fun AppSection(
+    deviceId: String,
     userAgent: String,
     packageName: String,
     loginEndpoint: String,
@@ -35,6 +36,11 @@ fun AppSection(
                 .padding(bottom = 4.dp)
         ) {
             SettingSectionHeader(title = "应用")
+            ClickableSettingItem(
+                title = "设备标识 ID",
+                subtitle = deviceId.ifEmpty { "正在获取..." },
+                onClick = { onOpenDialog(SettingsDialogOpen.DEVICE_ID) }
+            )
             ClickableSettingItem(
                 title = "User-Agent",
                 subtitle = userAgent.ifEmpty { "无" },

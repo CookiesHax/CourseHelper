@@ -23,7 +23,8 @@ enum class SettingsDialogOpen {
     PACKAGE_NAME,
     CHECK_IN_SEMAPHORE,
     MAX_CAPTCHA_RETRIES,
-    MAX_IMAGE_CACHE_SIZE
+    MAX_IMAGE_CACHE_SIZE,
+    DEVICE_ID
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -87,6 +88,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _packageName = MutableStateFlow("com.chaoxing.mobile")
     val packageName: StateFlow<String> = _packageName.asStateFlow()
 
+    private val _deviceId = MutableStateFlow("")
+    val deviceId: StateFlow<String> = _deviceId.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Initial sync fetch of all values
@@ -104,6 +108,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _maxImageCacheSize.value = repository.maxImageCacheSize.first()
             _userAgent.value = repository.userAgent.first()
             _packageName.value = repository.packageName.first()
+            _deviceId.value = NetworkClient.getDeviceId()
 
             _isReady.value = true
 
@@ -279,6 +284,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val name = packageName.ifBlank { "com.chaoxing.mobile" }
             repository.setPackageName(name)
+        }
+    }
+
+    fun resetDeviceId() {
+        viewModelScope.launch {
+            NetworkClient.resetDeviceId()
+            _deviceId.value = NetworkClient.getDeviceId()
+            // 重新生成 UA
+            repository.setUserAgent("")
+            _userAgent.value = NetworkClient.getUserAgent()
         }
     }
 }

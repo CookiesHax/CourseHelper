@@ -105,6 +105,21 @@ object NetworkClient {
         getOrGenerateUserAgentSync()
     }
 
+    suspend fun getDeviceId(): String = withContext(Dispatchers.IO) {
+        getOrGenerateIdSync()
+    }
+
+    suspend fun resetDeviceId() = withContext(Dispatchers.IO) {
+        synchronized(this@NetworkClient) {
+            cachedId = null
+        }
+        val key = stringPreferencesKey("unique_device_id")
+        context.networkDataStore.edit { preferences ->
+            preferences.remove(key)
+        }
+        clearUserAgentCache()
+    }
+
     // 预热缓存 在 Application 中调用
     fun preheat() {
         CoroutineScope(Dispatchers.IO).launch {

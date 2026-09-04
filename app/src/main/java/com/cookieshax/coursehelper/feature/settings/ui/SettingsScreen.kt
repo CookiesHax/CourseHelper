@@ -9,12 +9,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +68,7 @@ fun SettingsScreen(navController: NavController) {
     val maxImageCacheSize by viewModel.maxImageCacheSize.collectAsState()
     val userAgent by viewModel.userAgent.collectAsState()
     val packageName by viewModel.packageName.collectAsState()
+    val deviceId by viewModel.deviceId.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.refreshCacheSize()
@@ -184,6 +187,31 @@ fun SettingsScreen(navController: NavController) {
             )
         }
 
+        SettingsDialogOpen.DEVICE_ID -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                title = { Text("重新生成设备 ID") },
+                text = { Text("重新生成设备 ID 将会导致 User-Agent 发生变化。确定要继续吗？") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.resetDeviceId()
+                            viewModel.setActiveDialog(null)
+                        }
+                    ) {
+                        Text("确定")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.setActiveDialog(null) }
+                    ) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
+
         else -> {}
     }
 
@@ -248,6 +276,7 @@ fun SettingsScreen(navController: NavController) {
 
                 // 网络
                 AppSection(
+                    deviceId = deviceId,
                     userAgent = userAgent,
                     packageName = packageName,
                     loginEndpoint = loginEndpoint,
