@@ -49,26 +49,33 @@ fun String.showToast(duration: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(CourseHelperApplication.context, this, duration).show()
 }
 
-fun JsonObject.getStringOrEmpty(key: String): String =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asString else ""
+fun JsonObject.getStringOrNull(key: String): String? {
+    val element = get(key) ?: return null
+    if (element.isJsonNull || !element.isJsonPrimitive) return null
+    return element.asString
+}
 
 fun JsonObject.getStringOrDefault(key: String, default: String): String =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asString else default
+    getStringOrNull(key) ?: default
 
-fun JsonObject.getStringOrNull(key: String): String? =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asString else null
+fun JsonObject.getStringOrEmpty(key: String): String =
+    getStringOrDefault(key, "")
 
 fun JsonObject.getIntOrDefault(key: String, default: Int): Int =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asInt else default
+    getStringOrNull(key)?.trim()?.toIntOrNull() ?: default
 
 fun JsonObject.getLongOrDefault(key: String, default: Long): Long =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asLong else default
+    getStringOrNull(key)?.trim()?.toLongOrNull() ?: default
 
 fun JsonObject.getDoubleOrDefault(key: String, default: Double): Double =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asDouble else default
+    getStringOrNull(key)?.trim()?.toDoubleOrNull() ?: default
 
-fun JsonObject.getBooleanOrDefault(key: String, default: Boolean): Boolean =
-    if (has(key) && get(key).isJsonPrimitive) get(key).asBoolean else default
+fun JsonObject.getBooleanOrDefault(key: String, default: Boolean): Boolean {
+    val str = getStringOrNull(key)?.trim() ?: return default
+    return str.toBooleanStrictOrNull() ?: default
+}
 
-fun JsonObject.getAsJsonObjectOrNull(key: String): JsonObject? =
-    if (has(key) && get(key).isJsonObject) get(key).asJsonObject else null
+fun JsonObject.getAsJsonObjectOrNull(key: String): JsonObject? {
+    val element = get(key) ?: return null
+    return if (element.isJsonObject) element.asJsonObject else null
+}
