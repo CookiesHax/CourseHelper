@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -47,29 +48,29 @@ import com.cookieshax.coursehelper.feature.account.ui.components.AccountWithTags
 import com.cookieshax.coursehelper.feature.account.ui.components.TagEditDialog
 import com.cookieshax.coursehelper.feature.account.ui.components.TagListContent
 import com.cookieshax.coursehelper.feature.account.ui.components.TagSelectDialog
+import com.cookieshax.coursehelper.feature.account.viewmodel.SelectionType
 import com.cookieshax.coursehelper.feature.account.viewmodel.TagManagerViewModel
 import com.cookieshax.coursehelper.ui.items.HctColorPickerDialog
 import com.cookieshax.coursehelper.ui.items.HctColorState
 import com.cookieshax.coursehelper.ui.items.IcTags
 import com.cookieshax.coursehelper.ui.items.SearchInput
 import com.cookieshax.coursehelper.ui.items.SearchTrigger
+import kotlinx.coroutines.flow.collectLatest
 import kotlin.coroutines.cancellation.CancellationException
-
-enum class SelectionType {
-    TAG,
-    ACCOUNT
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun TagManagerScreen(navController: NavHostController) {
+fun TagManagerScreen(
+    navController: NavHostController,
+    showBackButton: Boolean = true
+) {
     val viewModel: TagManagerViewModel = viewModel()
     val tagsWithAccounts by viewModel.tagsWithAccounts.collectAsState()
     val accountsWithTags by viewModel.accountsWithTags.collectAsState()
 
     val isNavigating = remember { mutableStateOf(false) }
 
-    var selectionType by rememberSaveable { mutableStateOf(SelectionType.TAG) }
+    val selectionType by viewModel.selectionType.collectAsState()
 
     // 搜索状态
     var isSearching by rememberSaveable { mutableStateOf(false) }
@@ -77,14 +78,25 @@ fun TagManagerScreen(navController: NavHostController) {
     var searchBackProgress by remember { mutableFloatStateOf(0f) }
 
     // 多选状态
-    var isSelectionMode by remember { mutableStateOf(false) }
-    var selectedTagIds by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val selectedTagIds by viewModel.selectedTagIds.collectAsState()
     var selectBackProgress by remember { mutableFloatStateOf(0f) }
 
     // 新建/编辑标签对话框状态
     var showTagDialog by remember { mutableStateOf(false) }
     var editingTag by remember { mutableStateOf<Tag?>(null) }
     var tempSelectedAccountUids by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        viewModel.triggerAddTag.collectLatest { count ->
+            if (count > 0) {
+                editingTag = null
+                tempSelectedAccountUids = emptyList()
+                showTagDialog = true
+                viewModel.consumeAddTagTrigger() // 消费掉触发器 防止切回 Tab 时再次触发
+            }
+        }
+    }
 
     // 账号选择对话框状态
     var showAccountSelectDialog by remember { mutableStateOf(false) }
@@ -95,7 +107,7 @@ fun TagManagerScreen(navController: NavHostController) {
     var editingAccountUid by remember { mutableStateOf<String?>(null) }
 
     // 删除确认对话框状态
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
 
     // 颜色选择器状态
     var showColorPicker by remember { mutableStateOf(false) }
@@ -127,191 +139,7 @@ fun TagManagerScreen(navController: NavHostController) {
     }
 
     SharedTransitionLayout {
-        Scaffold(
-            topBar = {
-                AnimatedContent(
-                    targetState = isSearching,
-                    transitionSpec = {
-                        fadeIn(tween(100)) togetherWith fadeOut(tween(100))
-                    },
-                    label = "tag_top_bar"
-                ) { searching ->
-                    if (searching) {
-                        TopAppBar(
-                            title = {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(end = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    SearchInput(
-                                        query = searchQuery,
-                                        onQueryChange = { searchQuery = it },
-                                        onClose = {
-                                            isSearching = false
-                                            searchQuery = ""
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .graphicsLayer {
-                                                val scale = 1f - (searchBackProgress * 0.08f)
-                                                scaleX = scale
-                                                scaleY = scale
-                                                alpha =
-                                                    1f - (searchBackProgress * 2f).coerceAtMost(1f)
-                                            },
-                                        hint = if (selectionType == SelectionType.TAG) "搜索标签..." else "搜索账号...",
-                                        animatedVisibilityScope = this@AnimatedContent
-                                    )
-                                }
-                            }
-                        )
-                    } else {
-                        TopAppBar(
-                            title = {
-                                if (isSelectionMode && selectionType == SelectionType.TAG) {
-                                    Text(
-                                        text = "${selectedTagIds.size} / ${tagsWithAccounts.size}",
-                                        modifier = Modifier.padding(start = 2.dp)
-                                    )
-                                } else {
-                                    Text("标签管理")
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        if (!isNavigating.value) {
-                                            isNavigating.value = true
-                                            navController.popBackStack()
-                                        }
-                                    },
-                                    enabled = !isNavigating.value
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "返回"
-                                    )
-                                }
-                            },
-                            actions = {
-                                // 搜索
-                                SearchTrigger(
-                                    onClick = { isSearching = true },
-                                    animatedVisibilityScope = this@AnimatedContent
-                                )
-
-                                if (isSelectionMode) {
-                                    // 全选/取消全选
-                                    if (selectionType == SelectionType.TAG) {
-                                        if (selectedTagIds.size == tagsWithAccounts.size) {
-                                            IconButton(onClick = { selectedTagIds = setOf() }) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Deselect,
-                                                    contentDescription = "取消全选"
-                                                )
-                                            }
-                                        } else {
-                                            IconButton(onClick = {
-                                                selectedTagIds =
-                                                    tagsWithAccounts.map { it.tag.tagId.toString() }
-                                                        .toSet()
-                                            }) {
-                                                Icon(
-                                                    imageVector = Icons.Default.SelectAll,
-                                                    contentDescription = "全选"
-                                                )
-                                            }
-                                        }
-
-                                        // 删除
-                                        IconButton(onClick = {
-                                            if (selectedTagIds.isNotEmpty()) showDeleteDialog = true
-                                        }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "删除",
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    // 新建标签
-                                    IconButton(
-                                        onClick = {
-                                            editingTag = null
-                                            tempSelectedAccountUids = emptyList()
-                                            showTagDialog = true
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = "新建标签"
-                                        )
-                                    }
-
-                                    if (selectionType == SelectionType.TAG) {
-                                        IconButton(
-                                            onClick = {
-                                                selectionType = SelectionType.ACCOUNT
-                                                isSelectionMode = false
-                                                selectedTagIds = emptySet()
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Person,
-                                                contentDescription = "按账号管理标签"
-                                            )
-                                        }
-                                    } else {
-                                        IconButton(
-                                            onClick = {
-                                                selectionType = SelectionType.TAG
-                                                isSelectionMode = false
-                                                selectedTagIds = emptySet()
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = IcTags,
-                                                contentDescription = "按标签管理账号"
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        ) { innerPadding ->
-            PredictiveBackHandler(
-                enabled = isSearching || isSelectionMode
-            ) { progress ->
-                try {
-                    progress.collect { backEvent ->
-                        if (isSearching) {
-                            searchBackProgress = backEvent.progress
-                        } else if (isSelectionMode) {
-                            selectBackProgress = backEvent.progress
-                        }
-                    }
-
-                    if (isSearching) {
-                        isSearching = false
-                        searchQuery = ""
-                        searchBackProgress = 0f
-                    } else if (isSelectionMode) {
-                        isSelectionMode = false
-                        selectedTagIds = emptySet()
-                        selectBackProgress = 0f
-                    }
-                } catch (_: CancellationException) {
-                    searchBackProgress = 0f
-                    selectBackProgress = 0f
-                }
-            }
-
+        val content = @Composable { modifier: Modifier ->
             if (selectionType == SelectionType.TAG) {
                 TagListContent(
                     tags = tagsWithAccounts,
@@ -322,11 +150,13 @@ fun TagManagerScreen(navController: NavHostController) {
                     onTagClick = { tagWithAccounts ->
                         val tagId = tagWithAccounts.tag.tagId.toString()
                         if (isSelectionMode) {
-                            selectedTagIds = if (selectedTagIds.contains(tagId)) {
-                                selectedTagIds - tagId
-                            } else {
-                                selectedTagIds + tagId
-                            }
+                            viewModel.setSelectedTagIds(
+                                if (selectedTagIds.contains(tagId)) {
+                                    selectedTagIds - tagId
+                                } else {
+                                    selectedTagIds + tagId
+                                }
+                            )
                         } else {
                             editingTag = tagWithAccounts.tag
                             tempSelectedAccountUids = tagWithAccounts.accounts.map { it.uid }
@@ -344,9 +174,9 @@ fun TagManagerScreen(navController: NavHostController) {
                         currentList.add(toIndex, movedItem)
                         viewModel.reorderTags(currentList)
                     },
-                    onSelectionModeChanged = { isSelectionMode = it },
-                    onSelectedIdsChanged = { selectedTagIds = it },
-                    modifier = Modifier.padding(innerPadding)
+                    onSelectionModeChanged = { viewModel.setSelectionMode(it) },
+                    onSelectedIdsChanged = { viewModel.setSelectedTagIds(it) },
+                    modifier = modifier
                 )
             } else {
                 AccountWithTagsListContent(
@@ -362,8 +192,206 @@ fun TagManagerScreen(navController: NavHostController) {
                         tempSelectedTagIds = accountWithTags.tags.map { it.tagId }
                         showTagSelectDialog = true
                     },
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = modifier
                 )
+            }
+        }
+
+        if (!showBackButton) {
+            // 嵌入模式 直接渲染内容
+            content(Modifier)
+        } else {
+            // 独立页面模式 渲染 Scaffold
+            Scaffold(
+                topBar = {
+                    AnimatedContent(
+                        targetState = isSearching,
+                        transitionSpec = {
+                            fadeIn(tween(100)) togetherWith fadeOut(tween(100))
+                        },
+                        label = "tag_top_bar"
+                    ) { searching ->
+                        if (searching) {
+                            TopAppBar(
+                                title = {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(end = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        SearchInput(
+                                            query = searchQuery,
+                                            onQueryChange = { searchQuery = it },
+                                            onClose = {
+                                                isSearching = false
+                                                searchQuery = ""
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .graphicsLayer {
+                                                    val scale = 1f - (searchBackProgress * 0.08f)
+                                                    scaleX = scale
+                                                    scaleY = scale
+                                                    alpha =
+                                                        1f - (searchBackProgress * 2f).coerceAtMost(
+                                                            1f
+                                                        )
+                                                },
+                                            hint = if (selectionType == SelectionType.TAG) "搜索标签..." else "搜索账号...",
+                                            animatedVisibilityScope = this@AnimatedContent
+                                        )
+                                    }
+                                }
+                            )
+                        } else {
+                            TopAppBar(
+                                title = {
+                                    if (isSelectionMode && selectionType == SelectionType.TAG) {
+                                        Text(
+                                            text = "${selectedTagIds.size} / ${tagsWithAccounts.size}",
+                                            modifier = Modifier.padding(start = 2.dp)
+                                        )
+                                    } else {
+                                        Text("标签管理")
+                                    }
+                                },
+                                navigationIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            if (!isNavigating.value) {
+                                                isNavigating.value = true
+                                                navController.popBackStack()
+                                            }
+                                        },
+                                        enabled = !isNavigating.value
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "返回"
+                                        )
+                                    }
+                                },
+                                actions = {
+                                    // 搜索
+                                    SearchTrigger(
+                                        onClick = { isSearching = true },
+                                        animatedVisibilityScope = this@AnimatedContent
+                                    )
+
+                                    if (isSelectionMode) {
+                                        // 全选/取消全选
+                                        if (selectionType == SelectionType.TAG) {
+                                            if (selectedTagIds.size == tagsWithAccounts.size) {
+                                                IconButton(onClick = {
+                                                    viewModel.setSelectedTagIds(
+                                                        setOf()
+                                                    )
+                                                }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Deselect,
+                                                        contentDescription = "取消全选"
+                                                    )
+                                                }
+                                            } else {
+                                                IconButton(onClick = {
+                                                    viewModel.setSelectedTagIds(
+                                                        tagsWithAccounts.map { it.tag.tagId.toString() }
+                                                            .toSet()
+                                                    )
+                                                }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.SelectAll,
+                                                        contentDescription = "全选"
+                                                    )
+                                                }
+                                            }
+
+                                            // 删除
+                                            IconButton(onClick = {
+                                                if (selectedTagIds.isNotEmpty()) viewModel.setShowDeleteDialog(
+                                                    true
+                                                )
+                                            }) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "删除",
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        // 新建标签
+                                        IconButton(
+                                            onClick = {
+                                                editingTag = null
+                                                tempSelectedAccountUids = emptyList()
+                                                showTagDialog = true
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Add,
+                                                contentDescription = "新建标签"
+                                            )
+                                        }
+
+                                        if (selectionType == SelectionType.TAG) {
+                                            IconButton(
+                                                onClick = {
+                                                    viewModel.setSelectionType(SelectionType.ACCOUNT)
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = "按账号管理标签"
+                                                )
+                                            }
+                                        } else {
+                                            IconButton(
+                                                onClick = {
+                                                    viewModel.setSelectionType(SelectionType.TAG)
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = IcTags,
+                                                    contentDescription = "按标签管理账号"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            ) { innerPadding ->
+                PredictiveBackHandler(
+                    enabled = isSearching || isSelectionMode
+                ) { progress ->
+                    try {
+                        progress.collect { backEvent ->
+                            if (isSearching) {
+                                searchBackProgress = backEvent.progress
+                            } else if (isSelectionMode) {
+                                selectBackProgress = backEvent.progress
+                            }
+                        }
+
+                        if (isSearching) {
+                            isSearching = false
+                            searchQuery = ""
+                            searchBackProgress = 0f
+                        } else if (isSelectionMode) {
+                            viewModel.setSelectionMode(false)
+                            selectBackProgress = 0f
+                        }
+                    } catch (_: CancellationException) {
+                        searchBackProgress = 0f
+                        selectBackProgress = 0f
+                    }
+                }
+
+                content(Modifier.padding(innerPadding))
             }
         }
 
@@ -450,7 +478,7 @@ fun TagManagerScreen(navController: NavHostController) {
                 tagsWithAccounts.filter { selectedTagIds.contains(it.tag.tagId.toString()) }
             val totalAccounts = tagsToDelete.flatMap { it.accounts }.distinctBy { it.uid }.size
             AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
+                onDismissRequest = { viewModel.setShowDeleteDialog(false) },
                 title = { Text("删除标签") },
                 text = {
                     if (totalAccounts > 0) {
@@ -463,16 +491,15 @@ fun TagManagerScreen(navController: NavHostController) {
                     TextButton(
                         onClick = {
                             viewModel.deleteTags(tagsToDelete.map { it.tag })
-                            isSelectionMode = false
-                            selectedTagIds = emptySet()
-                            showDeleteDialog = false
+                            viewModel.setSelectionMode(false)
+                            viewModel.setShowDeleteDialog(false)
                         }
                     ) {
                         Text("删除", color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
+                    TextButton(onClick = { viewModel.setShowDeleteDialog(false) }) {
                         Text("取消")
                     }
                 }

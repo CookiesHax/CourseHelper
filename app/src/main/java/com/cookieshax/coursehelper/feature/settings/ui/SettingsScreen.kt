@@ -46,7 +46,10 @@ import com.cookieshax.coursehelper.feature.settings.ui.dialogs.UserAgentDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController) {
+fun SettingsScreen(
+    navController: NavController,
+    showBackButton: Boolean = true
+) {
     val isNavigating = remember { mutableStateOf(false) }
     val viewModel: SettingsViewModel = viewModel()
     val isReady by viewModel.isReady.collectAsState()
@@ -213,93 +216,102 @@ fun SettingsScreen(navController: NavController) {
         else -> {}
     }
 
+    val content = @Composable { modifier: Modifier ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 个性化
+            PersonalizationSection(
+                isDynamicColorEnabled = isDynamicColorEnabled,
+                appTheme = appTheme,
+                themeColor = themeColor,
+                onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
+                onOpenDialog = { viewModel.setActiveDialog(it) }
+            )
+
+            // 课程
+            CourseSection(
+                preferOkHttpOverWebView = preferOkHttpOverWebView,
+                isCheckInDefaultSelectAll = isCheckInDefaultSelectAll,
+                checkInSemaphoreLimit = checkInSemaphoreLimit,
+                isOpencvEnabledForCaptcha = isOpencvEnabledForCaptcha,
+                maxCaptchaRetries = maxCaptchaRetries,
+                showUnsupportedTasks = showUnsupportedTasks,
+                showUnnecessaryCourses = showUnnecessaryCourses,
+                onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
+                onToggleCheckInDefaultSelectAll = { viewModel.toggleCheckInDefaultSelectAll(it) },
+                onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
+                onToggleOpencvForCaptcha = { viewModel.toggleOpencvForCaptcha(it) },
+                onSetMaxCaptchaRetries = { viewModel.setMaxCaptchaRetries(it) },
+                onToggleShowUnsupportedTasks = { viewModel.toggleShowUnsupportedTasks(it) },
+                onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) },
+                onOpenDialog = { viewModel.setActiveDialog(it) }
+            )
+
+            // 网络
+            AppSection(
+                deviceId = deviceId,
+                userAgent = userAgent,
+                packageName = packageName,
+                loginEndpoint = loginEndpoint,
+                locationMethod = locationMethod,
+                onOpenDialog = { viewModel.setActiveDialog(it) }
+            )
+
+            // 应用
+            StorageSection(
+                clearCacheOnStartup = clearCacheOnStartup,
+                cacheExpirationDays = cacheExpirationDays,
+                cacheSize = cacheSize,
+                maxImageCacheSize = maxImageCacheSize,
+                onOpenDialog = { viewModel.setActiveDialog(it) },
+                onToggleClearCacheOnStartup = { viewModel.toggleClearCacheOnStartup(it) },
+                onClearCache = { viewModel.clearCache() },
+                onSetMaxImageCacheSize = { viewModel.setMaxImageCacheSize(it) }
+            )
+
+            // 关于
+            AboutSection()
+
+            Spacer(
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("设置") },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                if (!isNavigating.value) {
-                                    isNavigating.value = true
-                                    navController.popBackStack()
+        if (!showBackButton) {
+            content(Modifier)
+        } else {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("设置") },
+                        navigationIcon = {
+                            if (showBackButton) {
+                                IconButton(
+                                    onClick = {
+                                        if (!isNavigating.value) {
+                                            isNavigating.value = true
+                                            navController.popBackStack()
+                                        }
+                                    },
+                                    enabled = !isNavigating.value
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "返回"
+                                    )
                                 }
-                            },
-                            enabled = !isNavigating.value
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
-                            )
+                            }
                         }
-                    }
-                )
-            }
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 个性化
-                PersonalizationSection(
-                    isDynamicColorEnabled = isDynamicColorEnabled,
-                    appTheme = appTheme,
-                    themeColor = themeColor,
-                    onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
-                    onOpenDialog = { viewModel.setActiveDialog(it) }
-                )
-
-                // 课程
-                CourseSection(
-                    preferOkHttpOverWebView = preferOkHttpOverWebView,
-                    isCheckInDefaultSelectAll = isCheckInDefaultSelectAll,
-                    checkInSemaphoreLimit = checkInSemaphoreLimit,
-                    isOpencvEnabledForCaptcha = isOpencvEnabledForCaptcha,
-                    maxCaptchaRetries = maxCaptchaRetries,
-                    showUnsupportedTasks = showUnsupportedTasks,
-                    showUnnecessaryCourses = showUnnecessaryCourses,
-                    onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
-                    onToggleCheckInDefaultSelectAll = { viewModel.toggleCheckInDefaultSelectAll(it) },
-                    onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
-                    onToggleOpencvForCaptcha = { viewModel.toggleOpencvForCaptcha(it) },
-                    onSetMaxCaptchaRetries = { viewModel.setMaxCaptchaRetries(it) },
-                    onToggleShowUnsupportedTasks = { viewModel.toggleShowUnsupportedTasks(it) },
-                    onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) },
-                    onOpenDialog = { viewModel.setActiveDialog(it) }
-                )
-
-                // 网络
-                AppSection(
-                    deviceId = deviceId,
-                    userAgent = userAgent,
-                    packageName = packageName,
-                    loginEndpoint = loginEndpoint,
-                    locationMethod = locationMethod,
-                    onOpenDialog = { viewModel.setActiveDialog(it) }
-                )
-
-                // 应用
-                StorageSection(
-                    clearCacheOnStartup = clearCacheOnStartup,
-                    cacheExpirationDays = cacheExpirationDays,
-                    cacheSize = cacheSize,
-                    maxImageCacheSize = maxImageCacheSize,
-                    onOpenDialog = { viewModel.setActiveDialog(it) },
-                    onToggleClearCacheOnStartup = { viewModel.toggleClearCacheOnStartup(it) },
-                    onClearCache = { viewModel.clearCache() },
-                    onSetMaxImageCacheSize = { viewModel.setMaxImageCacheSize(it) }
-                )
-
-                // 关于
-                AboutSection()
-
-                Spacer(
-                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding() + 16.dp)
-                )
+                    )
+                }
+            ) { innerPadding ->
+                content(Modifier.padding(top = innerPadding.calculateTopPadding()))
             }
         }
     }
