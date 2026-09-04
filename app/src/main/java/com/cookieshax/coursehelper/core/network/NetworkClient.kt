@@ -109,6 +109,17 @@ object NetworkClient {
         getOrGenerateIdSync()
     }
 
+    suspend fun setDeviceId(id: String) = withContext(Dispatchers.IO) {
+        synchronized(this@NetworkClient) {
+            cachedId = id
+        }
+        val key = stringPreferencesKey("unique_device_id")
+        context.networkDataStore.edit { preferences ->
+            preferences[key] = id
+        }
+        clearUserAgentCache()
+    }
+
     suspend fun resetDeviceId() = withContext(Dispatchers.IO) {
         synchronized(this@NetworkClient) {
             cachedId = null

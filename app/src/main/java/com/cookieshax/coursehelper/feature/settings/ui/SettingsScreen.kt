@@ -9,14 +9,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +35,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.components.AppSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.PersonalizationSection
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.DeviceIdDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LocationMethodDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.PackageNameDialog
@@ -190,26 +189,12 @@ fun SettingsScreen(navController: NavController) {
         }
 
         SettingsDialogOpen.DEVICE_ID -> {
-            AlertDialog(
+            DeviceIdDialog(
+                currentDeviceId = deviceId,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
-                title = { Text("重新生成设备 ID") },
-                text = { Text("重新生成设备 ID 将会导致 User-Agent 发生变化。确定要继续吗？") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.resetDeviceId()
-                            viewModel.setActiveDialog(null)
-                        }
-                    ) {
-                        Text("确定")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { viewModel.setActiveDialog(null) }
-                    ) {
-                        Text("取消")
-                    }
+                onConfirm = {
+                    viewModel.updateDeviceId(it)
+                    viewModel.setActiveDialog(null)
                 }
             )
         }

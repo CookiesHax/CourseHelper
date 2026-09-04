@@ -304,10 +304,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun resetDeviceId() {
+    fun updateDeviceId(id: String) {
         viewModelScope.launch {
-            NetworkClient.resetDeviceId()
-            _deviceId.value = NetworkClient.getDeviceId()
+            NetworkClient.setDeviceId(id)
+            _deviceId.value = id
             // 重新生成 UA
             repository.setUserAgent("")
             _userAgent.value = NetworkClient.getUserAgent()
