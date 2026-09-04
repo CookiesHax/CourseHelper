@@ -7,6 +7,8 @@ import com.baidu.location.LocationClient
 import com.baidu.mapapi.SDKInitializer
 import com.cookieshax.coursehelper.BuildConfig
 import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
+import com.cookieshax.coursehelper.core.location.LocationMethod
+import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.NetworkClient
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.utils.FileUtils
@@ -48,6 +50,18 @@ class CourseHelperApplication : Application() {
             if (settings.clearCacheOnStartup.first()) {
                 val days = settings.cacheExpirationDays.first()
                 FileUtils.cleanupCache(applicationContext, days * 86400L)
+            }
+        }
+
+        applicationScope.launch {
+            val settings = SettingsRepository(applicationContext)
+            settings.locationMethod.collect { methodStr ->
+                val method = try {
+                    LocationMethod.valueOf(methodStr)
+                } catch (_: Exception) {
+                    LocationMethod.BAIDU
+                }
+                LocationService.setLocationMethod(method)
             }
         }
 

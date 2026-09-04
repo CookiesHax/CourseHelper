@@ -4,12 +4,15 @@ import android.content.Context
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import com.baidu.location.BDAbstractLocationListener
 import com.baidu.location.BDLocation
 import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
 import com.cookieshax.coursehelper.app.CourseHelperApplication
+import com.cookieshax.coursehelper.core.utils.showToast
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +56,9 @@ object LocationService {
 
     @Volatile
     private var mockLongitude = 0.0
+
+    @Volatile
+    private var currentLocationMethod = LocationMethod.BAIDU
 
     private val _locationUpdates = MutableStateFlow<LocationData?>(null)
     val locationUpdates: StateFlow<LocationData?> = _locationUpdates.asStateFlow()
@@ -158,6 +164,28 @@ object LocationService {
         return DisposableHandle { unregister() }
     }
 
+    fun setLocationMethod(method: LocationMethod) {
+        if (currentLocationMethod == method) return
+        Log.d(TAG, "Setting location method to $method")
+        synchronized(lock) {
+            currentLocationMethod = method
+
+            // 如果已经启动定位 先停止
+            if (isLocationStarted) {
+                stopLocation()
+            }
+
+            if (!isLocationEnabled(CourseHelperApplication.context)) {
+                "请开启位置信息权限以使用定位功能".showToast(Toast.LENGTH_LONG)
+            }
+
+            // 当拥有引用或始终运行时 重新启动定位
+            if (referenceCount > 0 || method == LocationMethod.GPS_ALWAYS) {
+                startLocation()
+            }
+        }
+    }
+
     fun setMockLocation(latitude: Double, longitude: Double) {
         isMock = true
         mockLatitude = latitude
@@ -209,13 +237,21 @@ object LocationService {
     }
 
     private fun startLocation() {
-        // 尝试启动百度定位
-        try {
-            bdLocationClient.start()
-            Log.d(TAG, "Baidu Location started")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start Baidu Location: ${e.message}")
-            startNativeLocation() // 如果百度启动报错 回退到原生
+        Log.d(TAG, "Starting location service with method: $currentLocationMethod")
+        when (currentLocationMethod) {
+            LocationMethod.BAIDU -> {
+                try {
+                    bdLocationClient.start()
+                    Log.d(TAG, "Baidu Location started")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to start Baidu Location: ${e.message}")
+                    startNativeLocation()
+                }
+            }
+
+            LocationMethod.GPS_ONLY, LocationMethod.GPS_ALWAYS -> {
+                startNativeLocation()
+            }
         }
         isLocationStarted = true
     }
@@ -224,16 +260,19 @@ object LocationService {
         synchronized(lock) {
             if (isNativeStarted) return
             val context = CourseHelperApplication.context
-            Log.d(TAG, "Starting Native Location fallback...")
+            Log.d(TAG, "Starting Native Location (Method: $currentLocationMethod)...")
             try {
                 val locationManager =
                     context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                val mainLooper = Looper.getMainLooper()
+
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     locationManager.requestLocationUpdates(
                         LocationManager.GPS_PROVIDER,
                         5000L,
                         0f,
-                        nativeLocationListener
+                        nativeLocationListener,
+                        mainLooper
                     )
                 }
                 if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
@@ -241,11 +280,12 @@ object LocationService {
                         LocationManager.NETWORK_PROVIDER,
                         5000L,
                         0f,
-                        nativeLocationListener
+                        nativeLocationListener,
+                        mainLooper
                     )
                 }
                 isNativeStarted = true
-                Log.d(TAG, "Native Location fallback started")
+                Log.d(TAG, "Native Location started successfully")
             } catch (e: SecurityException) {
                 Log.e(TAG, "Native location permission missing: ${e.message}")
             } catch (e: Exception) {
@@ -289,7 +329,9 @@ object LocationService {
         Log.d(TAG, "Unregister location service, reference count: $count")
 
         if (count <= 0) {
-            stopLocation()
+            if (currentLocationMethod != LocationMethod.GPS_ALWAYS) {
+                stopLocation()
+            }
             if (count < 0) {
                 referenceCount = 0
             }

@@ -12,6 +12,7 @@ import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.imageloader.CoilConfig
 import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.network.NetworkClient
+import com.cookieshax.coursehelper.core.location.LocationMethod
 import kotlinx.coroutines.flow.first
 
 enum class SettingsDialogOpen {
@@ -24,7 +25,8 @@ enum class SettingsDialogOpen {
     CHECK_IN_SEMAPHORE,
     MAX_CAPTCHA_RETRIES,
     MAX_IMAGE_CACHE_SIZE,
-    DEVICE_ID
+    DEVICE_ID,
+    LOCATION_METHOD
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -91,6 +93,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _deviceId = MutableStateFlow("")
     val deviceId: StateFlow<String> = _deviceId.asStateFlow()
 
+    private val _locationMethod = MutableStateFlow(LocationMethod.BAIDU.name)
+    val locationMethod: StateFlow<String> = _locationMethod.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Initial sync fetch of all values
@@ -108,6 +113,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _maxImageCacheSize.value = repository.maxImageCacheSize.first()
             _userAgent.value = repository.userAgent.first()
             _packageName.value = repository.packageName.first()
+            _locationMethod.value = repository.locationMethod.first()
             _deviceId.value = NetworkClient.getDeviceId()
 
             _isReady.value = true
@@ -161,6 +167,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 repository.packageName.collect {
                     _packageName.value = it
                     ChaoXingAppInfo.packageName = it
+                }
+            }
+            launch {
+                repository.locationMethod.collect {
+                    _locationMethod.value = it
                 }
             }
         }
@@ -284,6 +295,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val name = packageName.ifBlank { "com.chaoxing.mobile" }
             repository.setPackageName(name)
+        }
+    }
+
+    fun setLocationMethod(method: String) {
+        viewModelScope.launch {
+            repository.setLocationMethod(method)
         }
     }
 

@@ -8,6 +8,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.cookieshax.coursehelper.core.location.LocationMethod
 import com.cookieshax.coursehelper.feature.settings.ui.items.ClickableSettingItem
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingItem
@@ -19,6 +20,7 @@ fun AppSection(
     userAgent: String,
     packageName: String,
     loginEndpoint: String,
+    locationMethod: String,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
     Card(
@@ -55,6 +57,11 @@ fun AppSection(
                 title = "密码登录端点",
                 currentValue = if (loginEndpoint == "web") "Web 端" else "App 端",
                 onClick = { onOpenDialog(SettingsDialogOpen.LOGIN_ENDPOINT) }
+            )
+            SelectionSettingItem(
+                title = "定位方式",
+                currentValue = LocationMethod.valueOf(locationMethod).description,
+                onClick = { onOpenDialog(SettingsDialogOpen.LOCATION_METHOD) }
             )
         }
     }

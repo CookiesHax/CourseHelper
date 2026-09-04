@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.cookieshax.coursehelper.core.location.LocationMethod
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -31,6 +32,7 @@ class SettingsRepository(private val context: Context) {
     private val maxImageCacheSizeKey = intPreferencesKey("max_image_cache_size")
     private val userAgentKey = stringPreferencesKey("user_agent")
     private val packageNameKey = stringPreferencesKey("package_name")
+    private val locationMethodKey = stringPreferencesKey("location_method")
 
     val userAgent: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
@@ -40,6 +42,11 @@ class SettingsRepository(private val context: Context) {
     val packageName: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
             preferences[packageNameKey] ?: "com.chaoxing.mobile"
+        }
+
+    val locationMethod: Flow<String> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[locationMethodKey] ?: LocationMethod.BAIDU.name
         }
 
     val isDynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -205,6 +212,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setPackageName(packageName: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[packageNameKey] = packageName
+        }
+    }
+
+    suspend fun setLocationMethod(method: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[locationMethodKey] = method
         }
     }
 }

@@ -38,6 +38,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.components.Personalizatio
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LocationMethodDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.PackageNameDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.SliderEditDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.StepSliderEditDialog
@@ -69,6 +70,7 @@ fun SettingsScreen(navController: NavController) {
     val userAgent by viewModel.userAgent.collectAsState()
     val packageName by viewModel.packageName.collectAsState()
     val deviceId by viewModel.deviceId.collectAsState()
+    val locationMethod by viewModel.locationMethod.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.refreshCacheSize()
@@ -212,6 +214,17 @@ fun SettingsScreen(navController: NavController) {
             )
         }
 
+        SettingsDialogOpen.LOCATION_METHOD -> {
+            LocationMethodDialog(
+                currentMethod = locationMethod,
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setLocationMethod(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
         else -> {}
     }
 
@@ -280,6 +293,7 @@ fun SettingsScreen(navController: NavController) {
                     userAgent = userAgent,
                     packageName = packageName,
                     loginEndpoint = loginEndpoint,
+                    locationMethod = locationMethod,
                     onOpenDialog = { viewModel.setActiveDialog(it) }
                 )
 
