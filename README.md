@@ -26,6 +26,10 @@
 |:-----------------------------------------------------:|:-------------------------------------------------:|:-------------------------------------------------:|:-----------------------------------------------------:|
 | <img src="docs/images/account_list.jpg" width="250"/> | <img src="docs/images/settings.jpg" width="250"/> | <img src="docs/images/tag_list.jpg" width="250"/> | <img src="docs/images/account_tags.jpg" width="250"/> |
 
+## 功能特性
+
+详细功能列表请参阅 [FEATURES.md](docs/FEATURES.md)
+
 ## 构建指南
 
 > [!IMPORTANT]

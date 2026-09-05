@@ -36,15 +36,14 @@ cd CourseHelper
 - **`core/`**: 核心基础能力 (指向上层业务的支撑)
     - `database/`: 数据库定义及 DAO (Room)。
     - `network/`: 网络请求封装、API Service 及拦截器。
-    - `repository/`: **数据仓库层**，负责整合网络与本地数据，是业务逻辑的核心。
+    - `repository/`: 数据仓库层，负责存放全局数据（如设置）。
     - `location/`: 带有模拟定位数据的定位服务封装。
-    - `permission/`: 权限申请封装。
+    - `permission/`: Android 权限申请封装。
     - `utils/`: 各种通用工具类（日期、加密、字符串处理等）。
 
 - **`feature/`**: 业务功能模块 (按功能垂直划分)
     - 每个子包（如 `login`, `checkin`, `course`）是一个独立的功能域。
-    - 遵循 MVVM 模式：内部包含 `UI` (Compose/Fragment/Activity) 与 `ViewModel`。
-    - 特殊模块：`camera` (扫码), `map` (地图展示), `webview` (网页容器)。
+    - 遵循 MVVM 模式：内部包含 `UI` (Compose)、 `Repository` 与 `ViewModel`。
 
 - **`ui/`**: 表现层公共组件
     - `theme/`: 全局配色、字体及 Compose 主题配置。
@@ -81,7 +80,6 @@ git checkout -b feature/your-feature-name
 
 - 遵循 Kotlin 官方编码规范
 - 添加必要的注释和文档
-- 为新功能编写测试
 - 确保代码在本地编译无误
 
 ### 4. 提交 Pull Request
@@ -139,22 +137,10 @@ feat(auth): 添加登录验证功能
 Closes #123
 ```
 
-## 测试
-
-- 为新功能编写单元测试
-- 测试应覆盖主要逻辑和边界情况
-- 所有测试必须通过后才能提交 PR
-
-运行测试：
-
-```bash
-./gradlew test
-```
-
 ## 文档
 
-- 更新 README.md（如功能改变了用法）
-- 为复杂功能添加注释
+- 更新 markdown 文档（如功能改变了用法）
+- 为复杂代码添加注释
 - 如需新增功能，请更新相关文档
 
 ## 行为准则
@@ -172,5 +158,6 @@ Closes #123
 - 在 Issue 中留言
 - 提交讨论
 - 联系项目维护者
+- 加入 [telegram 讨论群组](https://t.me/+nEAFA6HoOGFhNDNh)
 
 感谢你的贡献！🎉
