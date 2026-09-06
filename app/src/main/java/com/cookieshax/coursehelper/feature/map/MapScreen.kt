@@ -11,14 +11,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EditLocationAlt
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -37,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -75,6 +80,7 @@ fun MapScreen(
         var searchQuery by remember { mutableStateOf("") }
         var selectedPoi by remember { mutableStateOf<PoiInfo?>(null) }
         var longPressLocation by remember { mutableStateOf<LatLng?>(null) }
+        var showCoordinateDialog by remember { mutableStateOf(false) }
         val baiduMapRef = remember { mutableStateOf<BaiduMap?>(null) }
 
         // POI 搜索处理器
@@ -129,38 +135,51 @@ fun MapScreen(
         Scaffold(
             contentWindowInsets = WindowInsets.systemBars,
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        val currentMarkerLocation = longPressLocation ?: selectedPoi?.location
-                        if (currentMarkerLocation != null) {
-                            LocationService.setMockLocation(
-                                currentMarkerLocation.latitude,
-                                currentMarkerLocation.longitude
-                            )
-                            longPressLocation = null
-                            selectedPoi = null
-                        } else if (isMockLocationFlow) {
-                            LocationService.clearMockLocation()
-                        } else {
-                            locationUpdates?.let { location ->
-                                val latLng = LatLng(location.latitude, location.longitude)
-                                baiduMapRef.value?.animateMapStatus(
-                                    MapStatusUpdateFactory.newLatLngZoom(latLng, 17f)
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.size(56.dp),
-                    containerColor = if (isMockLocationFlow) {
-                        MaterialTheme.colorScheme.error // 红色表示正在模拟位置
-                    } else {
-                        MaterialTheme.colorScheme.primary
+                Column(horizontalAlignment = Alignment.End) {
+                    FloatingActionButton(
+                        onClick = { showCoordinateDialog = true },
+                        modifier = Modifier.size(56.dp),
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EditLocationAlt,
+                            contentDescription = "精确选点"
+                        )
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.GpsFixed,
-                        contentDescription = "定位"
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    FloatingActionButton(
+                        onClick = {
+                            val currentMarkerLocation = longPressLocation ?: selectedPoi?.location
+                            if (currentMarkerLocation != null) {
+                                LocationService.setMockLocation(
+                                    currentMarkerLocation.latitude,
+                                    currentMarkerLocation.longitude
+                                )
+                                longPressLocation = null
+                                selectedPoi = null
+                            } else if (isMockLocationFlow) {
+                                LocationService.clearMockLocation()
+                            } else {
+                                locationUpdates?.let { location ->
+                                    val latLng = LatLng(location.latitude, location.longitude)
+                                    baiduMapRef.value?.animateMapStatus(
+                                        MapStatusUpdateFactory.newLatLngZoom(latLng, 17f)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(56.dp),
+                        containerColor = if (isMockLocationFlow) {
+                            MaterialTheme.colorScheme.error // 红色表示正在模拟位置
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GpsFixed,
+                            contentDescription = "定位"
+                        )
+                    }
                 }
             },
             topBar = {
@@ -252,6 +271,21 @@ fun MapScreen(
                         results = poiSearchHandler.results,
                         onPoiSelected = { poi -> showPoiOnMap(poi) },
                         topOffset = searchResultsTopOffset
+                    )
+                }
+
+                if (showCoordinateDialog) {
+                    CoordinateInputDialog(
+                        onDismiss = { showCoordinateDialog = false },
+                        onConfirm = { latLng ->
+                            longPressLocation = latLng
+                            selectedPoi = null
+                            baiduMapRef.value?.animateMapStatus(
+                                MapStatusUpdateFactory.newLatLngZoom(latLng, 17f)
+                            )
+                        },
+                        initialLocation = longPressLocation ?: selectedPoi?.location
+                        ?: locationUpdates?.let { LatLng(it.latitude, it.longitude) }
                     )
                 }
             }
