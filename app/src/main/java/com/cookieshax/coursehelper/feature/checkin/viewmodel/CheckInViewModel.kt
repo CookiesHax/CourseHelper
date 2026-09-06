@@ -36,20 +36,13 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         val deferred: CompletableDeferred<String>
     )
 
-    private val settingsRepository = SettingsRepository(application)
+    // --- State Properties ---
+
     private val _isCheckingIn = MutableStateFlow(false)
     val isCheckingIn: StateFlow<Boolean> = _isCheckingIn.asStateFlow()
 
-    val faceCache = FaceCache()
-
-    fun setCheckingIn(value: Boolean) {
-        _isCheckingIn.value = value
-    }
-
     private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedIds: StateFlow<Set<String>> = _selectedIds.asStateFlow()
-
-    private var lastDefaultedTaskId: String? = null
 
     private val _resultsMap = MutableStateFlow<Map<String, ApiResult<String>>>(emptyMap())
     val resultsMap: StateFlow<Map<String, ApiResult<String>>> = _resultsMap.asStateFlow()
@@ -60,14 +53,12 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     private val _uploadedObjectIds = MutableStateFlow<Map<String, String>>(emptyMap())
     val uploadedObjectIds: StateFlow<Map<String, String>> = _uploadedObjectIds.asStateFlow()
 
-    // Manual Captcha State
     private val _manualCaptchaQueue = MutableStateFlow<List<ManualCaptchaRequest>>(emptyList())
     val manualCaptchaQueue: StateFlow<List<ManualCaptchaRequest>> =
         _manualCaptchaQueue.asStateFlow()
 
-    // Gesture Sign-In State
+    // Gesture State
     private val _gesturePoints = MutableStateFlow<List<Int>>(emptyList())
-
     val gesturePoints: StateFlow<List<Int>> = _gesturePoints.asStateFlow()
 
     private val _isCorrectGesture = MutableStateFlow(false)
@@ -76,7 +67,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     private val _gestureResult = MutableStateFlow(GestureResult.Idle)
     val gestureResult: StateFlow<GestureResult> = _gestureResult.asStateFlow()
 
-    // Code Sign-In State
+    // Code State
     private val _code = MutableStateFlow("")
     val code: StateFlow<String> = _code.asStateFlow()
 
@@ -85,6 +76,18 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
 
     private val _codeInputResult = MutableStateFlow(CodeInputResult.Idle)
     val codeInputResult: StateFlow<CodeInputResult> = _codeInputResult.asStateFlow()
+
+    // --- Helper Objects ---
+
+    private val settingsRepository = SettingsRepository(application)
+    val faceCache = FaceCache()
+    private var lastDefaultedTaskId: String? = null
+
+    // --- UI Actions ---
+
+    fun setCheckingIn(value: Boolean) {
+        _isCheckingIn.value = value
+    }
 
     fun setSelectedAccountsById(ids: Set<String>) {
         _selectedIds.value = ids
@@ -137,6 +140,8 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         _codeInputResult.value = result
     }
 
+    // --- Captcha Queue Actions ---
+
     suspend fun submitManualCaptchaOffset(offset: Int) {
         val currentQueue = _manualCaptchaQueue.value
         if (currentQueue.isEmpty()) return
@@ -147,15 +152,15 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         if (result != null) {
             currentRequest.deferred.complete(result)
         } else {
-            // 如果验证失败且是扫码签到 在加载新验证码前必须先刷新 enc2
             val finalCaptcha = updatedCaptcha
             val currentParams = currentRequest.params
             if (currentParams is CheckInParams.QrCode) {
                 val refreshResult =
                     currentRequest.strategy.execute(currentRequest.uid, currentParams, faceCache)
-                if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
-                    currentRequest.params = currentParams.copy(enc2 = newEnc2)
+                if (refreshResult is ApiResult.Success) {
+                    refreshResult.extractedEncToken?.let { newEnc2 ->
+                        currentRequest.params = currentParams.copy(enc2 = newEnc2)
+                    }
                 }
             }
             val refreshedCaptcha = finalCaptcha.load()
@@ -180,6 +185,8 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         currentRequest.deferred.completeExceptionally(Exception("Cancelled by user"))
         _manualCaptchaQueue.update { it.drop(1) }
     }
+
+    // --- Core Business Logic ---
 
     suspend fun performCheckIn(
         strategy: CheckInStrategy,
@@ -219,18 +226,16 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         if (!isNeedCaptcha) {
             val result = strategy.execute(uid, currentParams, faceCache)
             // 如果接口响应了 validate_ 依然要走验证码流程
-            if (currentParams is CheckInParams.QrCode
-                && result is ApiResult.Success
-                && result.data.startsWith("validate_")
-            ) {
-                val enc2 = result.data.split("_").getOrNull(1) ?: ""
-                currentParams = currentParams.copy(enc2 = enc2)
-                return solveCaptchaAndRetry(
-                    uid,
-                    strategy,
-                    currentParams,
-                    isFirstAttempt = false
-                )
+            if (currentParams is CheckInParams.QrCode && result is ApiResult.Success) {
+                result.extractedEncToken?.let { enc2 ->
+                    currentParams = currentParams.copy(enc2 = enc2)
+                    return solveCaptchaAndRetry(
+                        uid,
+                        strategy,
+                        currentParams,
+                        isFirstAttempt = false
+                    )
+                }
             }
             return result
         }
@@ -249,94 +254,106 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         params: CheckInParams,
         isFirstAttempt: Boolean = false
     ): ApiResult<String> {
-        val url = when (params) {
-            is CheckInParams.Normal -> params.url
-            is CheckInParams.QrCode -> params.url
-            is CheckInParams.Location -> params.url
-            is CheckInParams.Gesture -> params.url
-            is CheckInParams.Code -> params.url
+        val autoResult = tryAutoSolveCaptcha(uid, strategy, params, isFirstAttempt)
+        if (autoResult.isSuccess) {
+            return strategy.execute(
+                uid,
+                autoResult.updatedParams.withValidate(autoResult.validate),
+                faceCache
+            )
         }
 
-        var currentParams = params
-        var captcha = Captcha(uid = uid, referer = url)
+        return try {
+            val (manualValidate, finalParams) = awaitManualCaptcha(
+                uid,
+                strategy,
+                autoResult.updatedParams,
+                autoResult.lastCaptcha
+            )
+            strategy.execute(uid, finalParams.withValidate(manualValidate), faceCache)
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "验证已取消")
+        }
+    }
 
+    private suspend fun tryAutoSolveCaptcha(
+        uid: String,
+        strategy: CheckInStrategy,
+        params: CheckInParams,
+        isFirstAttempt: Boolean
+    ): AutoCaptchaResult {
+        var currentParams = params
+        var captcha = Captcha(uid = uid, referer = params.url)
         var counter = 0
-        var validate = ""
         val maxCaptchaRetries = settingsRepository.maxCaptchaRetries.first()
 
-        while (validate.isBlank() && counter < maxCaptchaRetries) {
-            if (
-                currentParams is CheckInParams.QrCode
-                && (isFirstAttempt || counter > 0)
-            ) {
+        while (counter < maxCaptchaRetries) {
+            if (currentParams is CheckInParams.QrCode && (isFirstAttempt || counter > 0)) {
                 val refreshResult = strategy.execute(uid, currentParams, faceCache)
-                if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
-                    currentParams = currentParams.copy(enc2 = newEnc2)
+                if (refreshResult is ApiResult.Success) {
+                    refreshResult.extractedEncToken?.let { newEnc2 ->
+                        currentParams = currentParams.copy(enc2 = newEnc2)
+                    }
                 }
             }
 
             captcha = captcha.load()
-            if (!captcha.isLoaded) {
-                return ApiResult.Error("验证码加载失败: ${captcha.errorMessage}")
-            }
+            if (!captcha.isLoaded) break
 
             try {
                 val x = CaptchaSolver.calculateCaptchaOffset(captcha)
                 val (res, nextCaptcha) = captcha.submit(x)
                 captcha = nextCaptcha
-                validate = res ?: ""
+                if (!res.isNullOrBlank()) {
+                    return AutoCaptchaResult(true, res, captcha, currentParams)
+                }
                 counter++
             } catch (e: Exception) {
                 e.message?.showToast()
                 break
             }
         }
+        return AutoCaptchaResult(false, "", captcha, currentParams)
+    }
 
-        // 手动打码
-        if (validate.isBlank()) {
-            // 确保获取 enc2
-            if (currentParams is CheckInParams.QrCode && currentParams.enc2.isBlank()) {
-                val refreshResult = strategy.execute(uid, currentParams, faceCache)
-                if (refreshResult is ApiResult.Success && refreshResult.data.startsWith("validate_")) {
-                    val newEnc2 = refreshResult.data.split("_").getOrNull(1) ?: ""
+    private suspend fun awaitManualCaptcha(
+        uid: String,
+        strategy: CheckInStrategy,
+        params: CheckInParams,
+        lastCaptcha: Captcha
+    ): Pair<String, CheckInParams> {
+        var currentParams = params
+        if (currentParams is CheckInParams.QrCode && currentParams.enc2.isBlank()) {
+            val refreshResult = strategy.execute(uid, currentParams, faceCache)
+            if (refreshResult is ApiResult.Success) {
+                refreshResult.extractedEncToken?.let { newEnc2 ->
                     currentParams = currentParams.copy(enc2 = newEnc2)
                 }
             }
+        }
 
-            // 在放入队列前必须先 load 以确保 UI 显示的图片和 Token 一致
-            val loadedCaptcha = captcha.load()
+        val loadedCaptcha = lastCaptcha.load()
+        val deferred = CompletableDeferred<String>()
+        val request = ManualCaptchaRequest(uid, loadedCaptcha, strategy, currentParams, deferred)
+        _manualCaptchaQueue.update { it + request }
 
-            val deferred = CompletableDeferred<String>()
-            val request =
-                ManualCaptchaRequest(uid, loadedCaptcha, strategy, currentParams, deferred)
-            _manualCaptchaQueue.update { it + request }
-
-            try {
-                validate = deferred.await()
-            } catch (_: Exception) {
-                return ApiResult.Error("验证已取消")
-            }
-
-            val updatedParamsFromQueue = request.params
+        return try {
+            val validate = deferred.await()
+            validate to request.params
+        } finally {
             _manualCaptchaQueue.update { current -> current.filterNot { it.uid == uid } }
-            val finalParams = when (updatedParamsFromQueue) {
-                is CheckInParams.Normal -> updatedParamsFromQueue.copy(validate = validate)
-                is CheckInParams.QrCode -> updatedParamsFromQueue.copy(validate = validate)
-                is CheckInParams.Location -> updatedParamsFromQueue.copy(validate = validate)
-                is CheckInParams.Gesture -> updatedParamsFromQueue.copy(validate = validate)
-                is CheckInParams.Code -> updatedParamsFromQueue.copy(validate = validate)
-            }
-            return strategy.execute(uid, finalParams, faceCache)
         }
-
-        val updatedParams = when (currentParams) {
-            is CheckInParams.Normal -> currentParams.copy(validate = validate)
-            is CheckInParams.QrCode -> currentParams.copy(validate = validate)
-            is CheckInParams.Location -> currentParams.copy(validate = validate)
-            is CheckInParams.Gesture -> currentParams.copy(validate = validate)
-            is CheckInParams.Code -> currentParams.copy(validate = validate)
-        }
-        return strategy.execute(uid, updatedParams, faceCache)
     }
+
+    // --- Private Helpers ---
+
+    private val ApiResult.Success<String>.extractedEncToken: String?
+        get() = if (data.startsWith("validate_")) data.substringAfter("validate_") else null
+
+    private data class AutoCaptchaResult(
+        val isSuccess: Boolean,
+        val validate: String,
+        val lastCaptcha: Captcha,
+        val updatedParams: CheckInParams
+    )
 }

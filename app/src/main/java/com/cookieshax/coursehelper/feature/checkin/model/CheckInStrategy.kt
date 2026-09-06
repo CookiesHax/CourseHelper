@@ -8,16 +8,23 @@ import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
 import java.util.concurrent.ConcurrentHashMap
 
 sealed class CheckInParams {
+    abstract val url: String
+    abstract val validate: String
+
+    abstract fun withValidate(validate: String): CheckInParams
+
     data class Normal(
-        val url: String,
+        override val url: String,
         val taskId: String,
         val courseId: String,
         val uploadedObjectIds: Map<String, String>,
-        val validate: String = ""
-    ) : CheckInParams()
+        override val validate: String = ""
+    ) : CheckInParams() {
+        override fun withValidate(validate: String) = copy(validate = validate)
+    }
 
     data class QrCode(
-        val url: String,
+        override val url: String,
         val taskId: String,
         val courseId: String,
         val enc: String,
@@ -26,35 +33,43 @@ sealed class CheckInParams {
         val address: String,
         val isNeedFaceCheck: Boolean,
         val enc2: String = "",
-        val validate: String = ""
-    ) : CheckInParams()
+        override val validate: String = ""
+    ) : CheckInParams() {
+        override fun withValidate(validate: String) = copy(validate = validate)
+    }
 
     data class Location(
-        val url: String,
+        override val url: String,
         val taskId: String,
         val courseId: String,
         val latitude: Double,
         val longitude: Double,
         val address: String,
         val isNeedFaceCheck: Boolean,
-        val validate: String = ""
-    ) : CheckInParams()
+        override val validate: String = ""
+    ) : CheckInParams() {
+        override fun withValidate(validate: String) = copy(validate = validate)
+    }
 
     data class Gesture(
-        val url: String,
+        override val url: String,
         val taskId: String,
         val courseId: String,
         val gestureCode: String,
-        val validate: String = ""
-    ) : CheckInParams()
+        override val validate: String = ""
+    ) : CheckInParams() {
+        override fun withValidate(validate: String) = copy(validate = validate)
+    }
 
     data class Code(
-        val url: String,
+        override val url: String,
         val taskId: String,
         val courseId: String,
         val signCode: String,
-        val validate: String = ""
-    ) : CheckInParams()
+        override val validate: String = ""
+    ) : CheckInParams() {
+        override fun withValidate(validate: String) = copy(validate = validate)
+    }
 }
 
 interface CheckInStrategy {
