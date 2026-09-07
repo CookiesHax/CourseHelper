@@ -56,6 +56,9 @@ sealed class CheckInParams {
         val taskId: String,
         val courseId: String,
         val gestureCode: String,
+        val latitude: Double,
+        val longitude: Double,
+        val address: String,
         override val validate: String = ""
     ) : CheckInParams() {
         override fun withValidate(validate: String) = copy(validate = validate)
@@ -66,6 +69,9 @@ sealed class CheckInParams {
         val taskId: String,
         val courseId: String,
         val signCode: String,
+        val latitude: Double,
+        val longitude: Double,
+        val address: String,
         override val validate: String = ""
     ) : CheckInParams() {
         override fun withValidate(validate: String) = copy(validate = validate)
@@ -248,6 +254,9 @@ class GestureCheckInStrategy : CheckInStrategy {
             activeId = p.taskId,
             courseId = p.courseId,
             signCode = p.gestureCode,
+            latitude = p.latitude,
+            longitude = p.longitude,
+            address = p.address,
             validate = p.validate
         )
     }
@@ -265,6 +274,9 @@ class CodeCheckInStrategy : CheckInStrategy {
             activeId = p.taskId,
             courseId = p.courseId,
             signCode = p.signCode,
+            latitude = p.latitude,
+            longitude = p.longitude,
+            address = p.address,
             validate = p.validate
         )
     }

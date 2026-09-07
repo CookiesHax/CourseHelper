@@ -258,7 +258,11 @@ fun CheckInScreen(
                 val isNeedLocation = state.ifopenAddress == 1
                 val isMockLocationFlow by LocationService.isMockLocationFlow.collectAsState()
 
-                if ((type == CheckInType.Location || (type == CheckInType.QRCode && isNeedLocation))) {
+                if (type == CheckInType.Location ||
+                    type == CheckInType.Gesture && isNeedLocation ||
+                    type == CheckInType.Code && isNeedLocation ||
+                    (type == CheckInType.QRCode && isNeedLocation)
+                ) {
                     FloatingActionButton(
                         onClick = {
                             navController.navigate(MapRoute) {
@@ -379,6 +383,7 @@ fun CheckInScreen(
                                             url = url,
                                             taskId = taskId,
                                             courseId = courseId ?: "",
+                                            checkInState = state,
                                             isNeedCaptcha = isNeedCaptcha,
                                             viewModel = vm,
                                             semaphoreLimit = limit
@@ -402,6 +407,7 @@ fun CheckInScreen(
                                             url = url,
                                             taskId = taskId,
                                             courseId = courseId ?: "",
+                                            checkInState = state,
                                             isNeedCaptcha = isNeedCaptcha,
                                             viewModel = vm,
                                             semaphoreLimit = limit

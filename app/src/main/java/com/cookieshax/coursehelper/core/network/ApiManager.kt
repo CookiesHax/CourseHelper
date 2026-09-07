@@ -295,7 +295,7 @@ object ApiManager {
             "maxW" to 1080,
             "updateTime" to task.startTime
         )
-        
+
         return NetworkClient.get(
             "https://notice.chaoxing.com/apis/notice/getNotice",
             EncryptionUtils.getEncParams(params)
@@ -310,7 +310,9 @@ object ApiManager {
         val tokenResult =
             NetworkClient.get("https://pan-yz.chaoxing.com/api/token/uservalid", asUser = userId)
         val token = when (tokenResult) {
-            is ApiResult.Success -> StringUtils.parseJson(tokenResult.data)?.getStringOrNull("_token")
+            is ApiResult.Success -> StringUtils.parseJson(tokenResult.data)
+                ?.getStringOrNull("_token")
+
             else -> return null
         } ?: return null
 
@@ -330,7 +332,11 @@ object ApiManager {
         // 秒传命中
         if (crcResult is ApiResult.Success) {
             val crcJson = StringUtils.parseJson(crcResult.data)
-            if (crcJson?.getBooleanOrDefault("result", false) == true && crcJson.getBooleanOrDefault("exist", false)) {
+            if (crcJson?.getBooleanOrDefault(
+                    "result",
+                    false
+                ) == true && crcJson.getBooleanOrDefault("exist", false)
+            ) {
                 return crcJson.getAsJsonObjectOrNull("data")?.getStringOrNull("objectid")
             }
         }
@@ -354,7 +360,8 @@ object ApiManager {
 
         return when (uploadResult) {
             is ApiResult.Success -> {
-                StringUtils.parseJson(uploadResult.data)?.getAsJsonObjectOrNull("data")?.getStringOrNull("objectId")
+                StringUtils.parseJson(uploadResult.data)?.getAsJsonObjectOrNull("data")
+                    ?.getStringOrNull("objectId")
             }
 
             else -> null
@@ -394,10 +401,10 @@ object ApiManager {
     }
 
     suspend fun getFaceEnc(activeId: String, faceId: String, asUser: String): ApiResult<String> {
-        val account = AccountRepository.getCurrentListSnapshot().find { it.uid == asUser }
+        val user = AccountRepository.getCurrentListSnapshot().find { it.uid == asUser }
 
-        val cid = account?.deviceInfo?.get("cid")?.asString ?: ""
-        val sc = account?.deviceInfo?.get("sc")?.asString ?: ""
+        val cid = user?.deviceInfo?.get("cid")?.asString ?: ""
+        val sc = user?.deviceInfo?.get("sc")?.asString ?: ""
 
         val faceResult = mutableMapOf(
             "LiveDetectionStatus" to "1",
@@ -591,7 +598,7 @@ object ApiManager {
             return ApiResult.Error("未找到用户")
         }
 
-        val params = mutableMapOf(
+        val body = mutableMapOf<String, Any>(
             "activeId" to activeId,
             "courseId" to courseId,
             "uid" to uid,
@@ -601,18 +608,21 @@ object ApiManager {
             "longitude" to "-1",
             "appType" to "15",
             "fid" to "0",
-            "objectId" to objectId,
             "name" to user.name,
-            "validate" to validate,
             "deviceCode" to EncryptionUtils.getDeviceCode()
         )
 
-        if (params["objectId"] == "") params.remove("objectId")
-        if (params["validate"] == "") params.remove("validate")
+        if (objectId.isNotBlank()) body["objectId"] = objectId
+        if (validate.isNotBlank()) body["validate"] = validate
 
-        return NetworkClient.get(
+        val headers = mapOf(
+            "Referer" to "https://mobilelearn.chaoxing.com/newsign/preSign?courseId=$courseId&activePrimaryId=$activeId&general=1&sys=1&ls=1&appType=15&uid=$uid&isTeacherViewOpen=0"
+        )
+
+        return NetworkClient.post(
             "https://mobilelearn.chaoxing.com/pptSign/stuSignajax",
-            params = params,
+            bodyMap = body,
+            headers = headers,
             asUser = uid
         )
     }
@@ -636,26 +646,53 @@ object ApiManager {
             return ApiResult.Error("未找到用户")
         }
 
-        val locationJson = """
-            {
-                "result": 1,
-                "latitude":$latitude,
-                "longitude":$longitude,
-                "mockData": {
-                    "strategy": 0,
-                    "probability": -1
-                },
-                "address": "$address"
-            }
-        """.trimIndent()
+        val cid = user.deviceInfo?.get("cid")?.asString ?: ""
+        val sc = user.deviceInfo?.get("sc")?.asString ?: ""
+        val currentTime = System.currentTimeMillis().toString()
 
-        val params = mutableMapOf(
+        // 用于签名的 data
+        val dataForHash = LinkedHashMap<String, Any>()
+        dataForHash["latitude"] = latitude
+        dataForHash["longitude"] = longitude
+        dataForHash["address"] = address
+        val dataJsonForHash = StringUtils.gson.toJson(dataForHash)
+
+        // 计算签名
+        val buffer = StringBuilder()
+        buffer.append("cxcid").append(cid)
+        buffer.append("cxtime").append(currentTime)
+        buffer.append("data").append(dataJsonForHash)
+        buffer.append(sc)
+        val signToken = EncryptionUtils.md5Hash(buffer.toString())
+
+        // 构建 Body 中的 location
+        val locationForBody = LinkedHashMap<String, Any>()
+        locationForBody["result"] = 1
+        locationForBody["address"] = address
+        locationForBody["longitude"] = longitude
+        locationForBody["latitude"] = latitude
+
+        // 构建 Body 中的 locationResult
+        val locationResult = LinkedHashMap<String, Any>()
+        locationResult["result"] = 1
+        locationResult["latitude"] = latitude
+        locationResult["longitude"] = longitude
+        locationResult["mockData"] = mapOf("strategy" to 0, "probability" to -1)
+        locationResult["locType"] = 161
+        locationResult["address"] = address
+        locationResult["signConfig"] = mapOf(
+            "signToken" to signToken,
+            "cxcid" to cid,
+            "cxtime" to currentTime
+        )
+
+        val body = mutableMapOf<String, Any>(
             "enc" to enc,
             "name" to user.name,
             "activeId" to activeId,
             "uid" to uid,
             "clientip" to "",
-            "location" to locationJson,
+            "location" to StringUtils.gson.toJson(locationForBody),
             "latitude" to "-1",
             "longitude" to "-1",
             "fid" to "0",
@@ -663,21 +700,26 @@ object ApiManager {
             "deviceCode" to EncryptionUtils.getDeviceCode(),
             "vpProbability" to "",
             "vpStrategy" to "",
-            "enc2" to enc2,
-            "validate" to validate,
             "currentFaceId" to faceId,
             "ifCFP" to "0",
             "courseId" to courseId,
-            "faceEnc" to faceEnc
+            "faceCode" to "",
+            "faceEncAid" to "",
+            "locationResult" to StringUtils.gson.toJson(locationResult)
         )
 
-        if (params["enc2"] == "") params.remove("enc2")
-        if (params["validate"] == "") params.remove("validate")
-        if (params["faceEnc"] == "") params.remove("faceEnc")
+        if (enc2.isNotBlank()) body["enc2"] = enc2
+        if (validate.isNotBlank()) body["validate"] = validate
+        if (faceEnc.isNotBlank()) body["faceEnc"] = faceEnc
 
-        return NetworkClient.get(
+        val headers = mapOf(
+            "Referer" to "https://mobilelearn.chaoxing.com/newsign/preSign?courseId=$courseId&activePrimaryId=$activeId&general=1&sys=1&ls=1&appType=15&uid=$uid&isTeacherViewOpen=0"
+        )
+
+        return NetworkClient.post(
             "https://mobilelearn.chaoxing.com/pptSign/stuSignajax",
-            params = params,
+            bodyMap = body,
+            headers = headers,
             asUser = uid
         )
     }
@@ -687,7 +729,10 @@ object ApiManager {
         activeId: String,
         courseId: String,
         signCode: String,
-        validate: String
+        latitude: Double = .0,
+        longitude: Double = .0,
+        address: String = "",
+        validate: String = ""
     ): ApiResult<String> {
         val accounts = AccountRepository.getCurrentListSnapshot()
         val user = accounts.find { it.uid == uid }
@@ -695,26 +740,72 @@ object ApiManager {
             return ApiResult.Error("未找到用户")
         }
 
-        val params = mutableMapOf(
+        val cid = user.deviceInfo?.get("cid")?.asString ?: ""
+        val sc = user.deviceInfo?.get("sc")?.asString ?: ""
+        val currentTime = System.currentTimeMillis().toString()
+
+        // 用于签名的 data
+        val dataForHash = LinkedHashMap<String, Any>()
+        dataForHash["latitude"] = latitude
+        dataForHash["longitude"] = longitude
+        dataForHash["address"] = address
+        val dataJsonForHash = StringUtils.gson.toJson(dataForHash)
+
+        // 计算签名
+        val buffer = StringBuilder()
+        buffer.append("cxcid").append(cid)
+        buffer.append("cxtime").append(currentTime)
+        buffer.append("data").append(dataJsonForHash)
+        buffer.append(sc)
+        val signToken = EncryptionUtils.md5Hash(buffer.toString())
+
+        // 构建 Body 中的 location
+        val locationForBody = LinkedHashMap<String, Any>()
+        locationForBody["result"] = 1
+        locationForBody["address"] = address
+        locationForBody["longitude"] = longitude
+        locationForBody["latitude"] = latitude
+
+        // 构建 Body 中的 locationResult
+        val locationResult = LinkedHashMap<String, Any>()
+        locationResult["result"] = 1
+        locationResult["latitude"] = latitude
+        locationResult["longitude"] = longitude
+        locationResult["mockData"] = mapOf("strategy" to 0, "probability" to -1)
+        locationResult["locType"] = 161
+        locationResult["address"] = address
+        locationResult["signConfig"] = mapOf(
+            "signToken" to signToken,
+            "cxcid" to cid,
+            "cxtime" to currentTime
+        )
+
+        val body = mutableMapOf<String, Any>(
             "activeId" to activeId,
             "courseId" to courseId,
             "uid" to uid,
             "clientip" to "",
-            "latitude" to "-1",
-            "longitude" to "-1",
+            "latitude" to latitude,
+            "longitude" to longitude,
             "appType" to "15",
             "fid" to "0",
             "name" to user.name,
             "signCode" to signCode,
-            "validate" to validate,
-            "deviceCode" to EncryptionUtils.getDeviceCode()
+            "deviceCode" to EncryptionUtils.getDeviceCode(),
+            "location" to StringUtils.gson.toJson(locationForBody),
+            "locationResult" to StringUtils.gson.toJson(locationResult)
         )
 
-        if (params["validate"] == "") params.remove("validate")
+        if (validate.isNotBlank()) body["validate"] = validate
 
-        return NetworkClient.get(
+        val headers = mapOf(
+            "Referer" to "https://mobilelearn.chaoxing.com/newsign/preSign?courseId=$courseId&activePrimaryId=$activeId&general=1&sys=1&ls=1&appType=15&uid=$uid&isTeacherViewOpen=0"
+        )
+
+        return NetworkClient.post(
             "https://mobilelearn.chaoxing.com/pptSign/stuSignajax",
-            params = params,
+            bodyMap = body,
+            headers = headers,
             asUser = uid
         )
     }
@@ -736,7 +827,7 @@ object ApiManager {
             return ApiResult.Error("未找到用户")
         }
 
-        val params = mutableMapOf(
+        val body = mutableMapOf<String, Any>(
             "name" to user.name,
             "address" to address,
             "activeId" to activeId,
@@ -748,21 +839,24 @@ object ApiManager {
             "fid" to "0",
             "appType" to "15",
             "ifTiJiao" to "1",
-            "validate" to validate,
             "deviceCode" to EncryptionUtils.getDeviceCode(),
             "vpProbability" to "-1",
             "vpStrategy" to "",
             "currentFaceId" to faceId,
-            "ifCFP" to "0",
-            "faceEnc" to faceEnc
+            "ifCFP" to "0"
         )
 
-        if (params["validate"] == "") params.remove("validate")
-        if (params["faceEnc"] == "") params.remove("faceEnc")
+        if (validate.isNotBlank()) body["validate"] = validate
+        if (faceEnc.isNotBlank()) body["faceEnc"] = faceEnc
 
-        return NetworkClient.get(
+        val headers = mapOf(
+            "Referer" to "https://mobilelearn.chaoxing.com/newsign/preSign?courseId=$courseId&activePrimaryId=$activeId&general=1&sys=1&ls=1&appType=15&uid=$uid&isTeacherViewOpen=0"
+        )
+
+        return NetworkClient.post(
             "https://mobilelearn.chaoxing.com/pptSign/stuSignajax",
-            params = params,
+            bodyMap = body,
+            headers = headers,
             asUser = uid
         )
     }
