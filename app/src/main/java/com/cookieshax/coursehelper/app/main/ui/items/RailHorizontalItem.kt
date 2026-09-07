@@ -1,4 +1,4 @@
-package com.cookieshax.coursehelper.app.main
+package com.cookieshax.coursehelper.app.main.ui.items
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -26,7 +27,7 @@ fun RailHorizontalItem(
         selected = selected,
         onClick = onClick,
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent,
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
