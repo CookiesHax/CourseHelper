@@ -231,8 +231,7 @@ object ApiManager {
                     ?.getAsJsonArray("data")
 
                 if (dataArray != null && dataArray.size() > 0) {
-                    dataArray.get(0).asJsonObject
-                        .get("createtime")?.asString
+                    dataArray.get(0).asJsonObject.getStringOrNull("createtime")
                 } else {
                     null
                 }
@@ -404,8 +403,8 @@ object ApiManager {
         val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == asUser }
             ?: AccountRepository.getCurrentListSnapshot().find { it.uid == asUser }
 
-        val cid = user?.deviceInfo?.get("cid")?.asString ?: ""
-        val sc = user?.deviceInfo?.get("sc")?.asString ?: ""
+        val cid = user?.deviceInfo?.getStringOrDefault("cid", "") ?: ""
+        val sc = user?.deviceInfo?.getStringOrDefault("sc", "") ?: ""
 
         val faceResult = mutableMapOf(
             "LiveDetectionStatus" to "1",
@@ -643,8 +642,8 @@ object ApiManager {
             ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
             ?: return ApiResult.Error("未找到用户")
 
-        val cid = user.deviceInfo?.get("cid")?.asString ?: ""
-        val sc = user.deviceInfo?.get("sc")?.asString ?: ""
+        val cid = user.deviceInfo?.getStringOrDefault("cid", "") ?: ""
+        val sc = user.deviceInfo?.getStringOrDefault("sc", "") ?: ""
         val currentTime = System.currentTimeMillis().toString()
 
         // 用于签名的 data
@@ -735,8 +734,8 @@ object ApiManager {
             ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
             ?: return ApiResult.Error("未找到用户")
 
-        val cid = user.deviceInfo?.get("cid")?.asString ?: ""
-        val sc = user.deviceInfo?.get("sc")?.asString ?: ""
+        val cid = user.deviceInfo?.getStringOrDefault("cid", "") ?: ""
+        val sc = user.deviceInfo?.getStringOrDefault("sc", "") ?: ""
         val currentTime = System.currentTimeMillis().toString()
 
         // 用于签名的 data
