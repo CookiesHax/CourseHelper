@@ -401,7 +401,8 @@ object ApiManager {
     }
 
     suspend fun getFaceEnc(activeId: String, faceId: String, asUser: String): ApiResult<String> {
-        val user = AccountRepository.getCurrentListSnapshot().find { it.uid == asUser }
+        val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == asUser }
+            ?: AccountRepository.getCurrentListSnapshot().find { it.uid == asUser }
 
         val cid = user?.deviceInfo?.get("cid")?.asString ?: ""
         val sc = user?.deviceInfo?.get("sc")?.asString ?: ""
@@ -592,11 +593,9 @@ object ApiManager {
         objectId: String,
         validate: String
     ): ApiResult<String> {
-        val accounts = AccountRepository.getCurrentListSnapshot()
-        val user = accounts.find { it.uid == uid }
-        if (user == null) {
-            return ApiResult.Error("未找到用户")
-        }
+        val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == uid }
+            ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
+            ?: return ApiResult.Error("未找到用户")
 
         val body = mutableMapOf<String, Any>(
             "activeId" to activeId,
@@ -640,11 +639,9 @@ object ApiManager {
         faceId: String = "",
         faceEnc: String = ""
     ): ApiResult<String> {
-        val accounts = AccountRepository.getCurrentListSnapshot()
-        val user = accounts.find { it.uid == uid }
-        if (user == null) {
-            return ApiResult.Error("未找到用户")
-        }
+        val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == uid }
+            ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
+            ?: return ApiResult.Error("未找到用户")
 
         val cid = user.deviceInfo?.get("cid")?.asString ?: ""
         val sc = user.deviceInfo?.get("sc")?.asString ?: ""
@@ -734,11 +731,9 @@ object ApiManager {
         address: String = "",
         validate: String = ""
     ): ApiResult<String> {
-        val accounts = AccountRepository.getCurrentListSnapshot()
-        val user = accounts.find { it.uid == uid }
-        if (user == null) {
-            return ApiResult.Error("未找到用户")
-        }
+        val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == uid }
+            ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
+            ?: return ApiResult.Error("未找到用户")
 
         val cid = user.deviceInfo?.get("cid")?.asString ?: ""
         val sc = user.deviceInfo?.get("sc")?.asString ?: ""
@@ -821,11 +816,9 @@ object ApiManager {
         faceId: String = "",
         faceEnc: String = ""
     ): ApiResult<String> {
-        val accounts = AccountRepository.getCurrentListSnapshot()
-        val user = accounts.find { it.uid == uid }
-        if (user == null) {
-            return ApiResult.Error("未找到用户")
-        }
+        val user = AccountRepository.activeAccountFlow.value.takeIf { it?.uid == uid }
+            ?: AccountRepository.getCurrentListSnapshot().find { it.uid == uid }
+            ?: return ApiResult.Error("未找到用户")
 
         val body = mutableMapOf<String, Any>(
             "name" to user.name,
