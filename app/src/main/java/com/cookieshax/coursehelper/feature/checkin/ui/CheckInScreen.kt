@@ -322,6 +322,7 @@ fun CheckInScreen(
                             accounts = accounts,
                             tagsWithAccounts = tagsWithAccounts,
                             isNeedPhoto = state.ifphoto == 1,
+                            showSplitLayout = type == CheckInType.Gesture,
                             inputComponent = { vm, setUploadCallback, setCameraCallback ->
                                 when (type) {
                                     CheckInType.Normal -> {

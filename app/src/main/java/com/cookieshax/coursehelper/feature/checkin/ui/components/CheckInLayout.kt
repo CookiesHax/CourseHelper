@@ -1,7 +1,10 @@
 package com.cookieshax.coursehelper.feature.checkin.ui.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.core.database.model.TagWithAccounts
@@ -26,6 +30,7 @@ fun CheckInLayout(
     accounts: List<Account>,
     tagsWithAccounts: List<TagWithAccounts>,
     isNeedPhoto: Boolean,
+    showSplitLayout: Boolean = false,
     inputComponent: @Composable (CheckInViewModel, ((String) -> Unit) -> Unit, ((String) -> Unit) -> Unit) -> Unit,
     triggerComponent: @Composable (CheckInViewModel) -> Unit
 ) {
@@ -38,42 +43,93 @@ fun CheckInLayout(
     val activeUploadAccountId by viewModel.activeUploadAccountId.collectAsState()
     val manualCaptchaQueue by viewModel.manualCaptchaQueue.collectAsState()
 
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+    val actualSplitLayout = isTablet && showSplitLayout
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Input area
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                inputComponent(
-                    viewModel,
-                    { onUploadImage = it },
-                    { onOpenCamera = it }
+            if (actualSplitLayout) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    // Input area
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        inputComponent(
+                            viewModel,
+                            { onUploadImage = it },
+                            { onOpenCamera = it }
+                        )
+                    }
+
+                    // Account list
+                    AccountList(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        accounts = accounts,
+                        tagsWithAccounts = tagsWithAccounts,
+                        selectedIds = selectedIds,
+                        isNeedPhoto = isNeedPhoto,
+                        activeUploadAccountId = activeUploadAccountId,
+                        uploadedObjectIds = uploadedObjectIds,
+                        onSelectionChange = { uid, isSelected ->
+                            viewModel.setAccountSelected(uid, isSelected)
+                        },
+                        onToggleIds = { uids, shouldSelect ->
+                            viewModel.toggleAccountsSelection(uids, shouldSelect)
+                        },
+                        onUploadImage = { uid ->
+                            onUploadImage?.invoke(uid)
+                        },
+                        onOpenCamera = { uid ->
+                            onOpenCamera?.invoke(uid)
+                        }
+                    )
+                }
+            } else {
+                // Input area
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    inputComponent(
+                        viewModel,
+                        { onUploadImage = it },
+                        { onOpenCamera = it }
+                    )
+                }
+
+                // Account list
+                AccountList(
+                    modifier = Modifier.weight(1f),
+                    accounts = accounts,
+                    tagsWithAccounts = tagsWithAccounts,
+                    selectedIds = selectedIds,
+                    isNeedPhoto = isNeedPhoto,
+                    activeUploadAccountId = activeUploadAccountId,
+                    uploadedObjectIds = uploadedObjectIds,
+                    onSelectionChange = { uid, isSelected ->
+                        viewModel.setAccountSelected(uid, isSelected)
+                    },
+                    onToggleIds = { uids, shouldSelect ->
+                        viewModel.toggleAccountsSelection(uids, shouldSelect)
+                    },
+                    onUploadImage = { uid ->
+                        onUploadImage?.invoke(uid)
+                    },
+                    onOpenCamera = { uid ->
+                        onOpenCamera?.invoke(uid)
+                    }
                 )
             }
-
-            // Account list
-            AccountList(
-                modifier = Modifier.weight(1f),
-                accounts = accounts,
-                tagsWithAccounts = tagsWithAccounts,
-                selectedIds = selectedIds,
-                isNeedPhoto = isNeedPhoto,
-                activeUploadAccountId = activeUploadAccountId,
-                uploadedObjectIds = uploadedObjectIds,
-                onSelectionChange = { uid, isSelected ->
-                    viewModel.setAccountSelected(uid, isSelected)
-                },
-                onToggleIds = { uids, shouldSelect ->
-                    viewModel.toggleAccountsSelection(uids, shouldSelect)
-                },
-                onUploadImage = { uid ->
-                    onUploadImage?.invoke(uid)
-                },
-                onOpenCamera = { uid ->
-                    onOpenCamera?.invoke(uid)
-                }
-            )
 
             // Action area
             Box(
