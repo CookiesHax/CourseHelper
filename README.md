@@ -7,7 +7,7 @@
 特别感谢 [AneryCoft](https://github.com/AneryCoft)
 及其项目 [course_helper](https://github.com/AneryCoft/course_helper)。
 
-本项目在 API 端点请求结构以及关键加密算法的逻辑移植上，得到了该项目的参考，特此表达诚挚的谢意。
+本项目在 API 端点请求结构以及学习通接口协议及数据处理逻辑的研究上，得到了该项目的参考，特此表达诚挚的谢意。
 
 ## 声明
 

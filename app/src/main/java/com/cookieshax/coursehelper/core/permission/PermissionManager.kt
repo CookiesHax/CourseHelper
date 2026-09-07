@@ -25,7 +25,10 @@ object PermissionManager : DefaultLifecycleObserver {
     }
 
     fun hasPermission(context: Context, string: String): Boolean {
-        return ContextCompat.checkSelfPermission(context, string) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            context,
+            string
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     // 统一的申请接口
