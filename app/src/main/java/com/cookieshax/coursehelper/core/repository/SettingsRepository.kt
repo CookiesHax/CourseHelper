@@ -21,7 +21,9 @@ class SettingsRepository(private val context: Context) {
     private val cacheExpirationDaysKey = intPreferencesKey("cache_expiration_days")
     private val loginEndpointKey = stringPreferencesKey("login_endpoint")
     private val checkInSemaphoreLimitKey = intPreferencesKey("check_in_semaphore_limit")
-    private val checkInDefaultSelectAllKey = booleanPreferencesKey("check_in_default_select_all")
+    private val checkInAccountSelectionModeKey =
+        intPreferencesKey("check_in_account_selection_mode")
+    private val checkInSelectAllOnScanKey = booleanPreferencesKey("check_in_select_all_on_scan")
     private val appThemeKey = stringPreferencesKey("app_theme")
     private val themeColorKey = stringPreferencesKey("theme_color")
     private val isOpencvEnabledForCaptchaKey =
@@ -33,7 +35,8 @@ class SettingsRepository(private val context: Context) {
     private val userAgentKey = stringPreferencesKey("user_agent")
     private val packageNameKey = stringPreferencesKey("package_name")
     private val locationMethodKey = stringPreferencesKey("location_method")
-    private val cacheAllAccountsOnStartupKey = booleanPreferencesKey("cache_all_accounts_on_startup")
+    private val cacheAllAccountsOnStartupKey =
+        booleanPreferencesKey("cache_all_accounts_on_startup")
 
     val userAgent: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
@@ -95,9 +98,14 @@ class SettingsRepository(private val context: Context) {
             preferences[maxCaptchaRetriesKey] ?: 3
         }
 
-    val isCheckInDefaultSelectAll: Flow<Boolean> = context.settingsDataStore.data
+    val checkInAccountSelectionMode: Flow<Int> = context.settingsDataStore.data
         .map { preferences ->
-            preferences[checkInDefaultSelectAllKey] != false
+            preferences[checkInAccountSelectionModeKey] ?: 0 // Default to NONE
+        }
+
+    val checkInSelectAllOnScan: Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[checkInSelectAllOnScanKey] == true // Default to false
         }
 
     val appTheme: Flow<String> = context.settingsDataStore.data
@@ -173,9 +181,15 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setCheckInDefaultSelectAll(enabled: Boolean) {
+    suspend fun setCheckInAccountSelectionMode(mode: Int) {
         context.settingsDataStore.edit { preferences ->
-            preferences[checkInDefaultSelectAllKey] = enabled
+            preferences[checkInAccountSelectionModeKey] = mode
+        }
+    }
+
+    suspend fun setCheckInSelectAllOnScan(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[checkInSelectAllOnScanKey] = enabled
         }
     }
 

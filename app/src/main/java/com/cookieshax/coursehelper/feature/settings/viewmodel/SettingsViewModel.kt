@@ -26,7 +26,8 @@ enum class SettingsDialogOpen {
     MAX_CAPTCHA_RETRIES,
     MAX_IMAGE_CACHE_SIZE,
     DEVICE_ID,
-    LOCATION_METHOD
+    LOCATION_METHOD,
+    CHECK_IN_ACCOUNT_SELECTION_MODE
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -66,8 +67,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _maxCaptchaRetries = MutableStateFlow(3)
     val maxCaptchaRetries: StateFlow<Int> = _maxCaptchaRetries.asStateFlow()
 
-    private val _isCheckInDefaultSelectAll = MutableStateFlow(true)
-    val isCheckInDefaultSelectAll: StateFlow<Boolean> = _isCheckInDefaultSelectAll.asStateFlow()
+    private val _checkInAccountSelectionMode = MutableStateFlow(0)
+    val checkInAccountSelectionMode: StateFlow<Int> = _checkInAccountSelectionMode.asStateFlow()
+
+    private val _checkInSelectAllOnScan = MutableStateFlow(false)
+    val checkInSelectAllOnScan: StateFlow<Boolean> = _checkInSelectAllOnScan.asStateFlow()
 
     private val _appTheme = MutableStateFlow("system")
     val appTheme: StateFlow<String> = _appTheme.asStateFlow()
@@ -108,7 +112,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _cacheExpirationDays.value = repository.cacheExpirationDays.first()
             _loginEndpoint.value = repository.loginEndpoint.first()
             _checkInSemaphoreLimit.value = repository.checkInSemaphoreLimit.first()
-            _isCheckInDefaultSelectAll.value = repository.isCheckInDefaultSelectAll.first()
+            _checkInAccountSelectionMode.value = repository.checkInAccountSelectionMode.first()
+            _checkInSelectAllOnScan.value = repository.checkInSelectAllOnScan.first()
             _appTheme.value = repository.appTheme.first()
             _themeColor.value = repository.themeColor.first()
             _showUnsupportedTasks.value = repository.showUnsupportedTasks.first()
@@ -148,8 +153,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             launch { repository.maxCaptchaRetries.collect { _maxCaptchaRetries.value = it } }
             launch {
-                repository.isCheckInDefaultSelectAll.collect {
-                    _isCheckInDefaultSelectAll.value = it
+                repository.checkInAccountSelectionMode.collect {
+                    _checkInAccountSelectionMode.value = it
+                }
+            }
+            launch {
+                repository.checkInSelectAllOnScan.collect {
+                    _checkInSelectAllOnScan.value = it
                 }
             }
             launch { repository.appTheme.collect { _appTheme.value = it } }
@@ -236,14 +246,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun toggleCheckInDefaultSelectAll(enabled: Boolean) {
+    fun setCheckInAccountSelectionMode(mode: Int) {
         viewModelScope.launch {
-            repository.setCheckInDefaultSelectAll(enabled)
+            repository.setCheckInAccountSelectionMode(mode)
         }
     }
 
-    suspend fun shouldDefaultSelectAll(): Boolean {
-        return repository.isCheckInDefaultSelectAll.first()
+    fun toggleCheckInSelectAllOnScan(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setCheckInSelectAllOnScan(enabled)
+        }
     }
 
     fun setAppTheme(theme: String) {

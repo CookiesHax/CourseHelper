@@ -35,6 +35,7 @@ import com.cookieshax.coursehelper.feature.settings.ui.components.AppSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.PersonalizationSection
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CheckInAccountSelectionModeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.DeviceIdDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LocationMethodDialog
@@ -60,9 +61,10 @@ fun SettingsScreen(
     val cacheExpirationDays by viewModel.cacheExpirationDays.collectAsState()
     val loginEndpoint by viewModel.loginEndpoint.collectAsState()
     val checkInSemaphoreLimit by viewModel.checkInSemaphoreLimit.collectAsState()
+    val checkInAccountSelectionMode by viewModel.checkInAccountSelectionMode.collectAsState()
+    val checkInSelectAllOnScan by viewModel.checkInSelectAllOnScan.collectAsState()
     val isOpencvEnabledForCaptcha by viewModel.isOpencvEnabledForCaptcha.collectAsState()
     val maxCaptchaRetries by viewModel.maxCaptchaRetries.collectAsState()
-    val isCheckInDefaultSelectAll by viewModel.isCheckInDefaultSelectAll.collectAsState()
     val cacheSize by viewModel.cacheSize.collectAsState()
     val appTheme by viewModel.appTheme.collectAsState()
     val themeColor by viewModel.themeColor.collectAsState()
@@ -214,6 +216,17 @@ fun SettingsScreen(
             )
         }
 
+        SettingsDialogOpen.CHECK_IN_ACCOUNT_SELECTION_MODE -> {
+            CheckInAccountSelectionModeDialog(
+                currentMode = checkInAccountSelectionMode,
+                onDismissRequest = { viewModel.setActiveDialog(null) },
+                onConfirm = {
+                    viewModel.setCheckInAccountSelectionMode(it)
+                    viewModel.setActiveDialog(null)
+                }
+            )
+        }
+
         else -> {}
     }
 
@@ -236,7 +249,8 @@ fun SettingsScreen(
             // 课程
             CourseSection(
                 preferOkHttpOverWebView = preferOkHttpOverWebView,
-                isCheckInDefaultSelectAll = isCheckInDefaultSelectAll,
+                checkInAccountSelectionMode = checkInAccountSelectionMode,
+                checkInSelectAllOnScan = checkInSelectAllOnScan,
                 checkInSemaphoreLimit = checkInSemaphoreLimit,
                 isOpencvEnabledForCaptcha = isOpencvEnabledForCaptcha,
                 maxCaptchaRetries = maxCaptchaRetries,
@@ -244,7 +258,7 @@ fun SettingsScreen(
                 showUnnecessaryCourses = showUnnecessaryCourses,
                 cacheAllAccountsOnStartup = cacheAllAccountsOnStartup,
                 onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
-                onToggleCheckInDefaultSelectAll = { viewModel.toggleCheckInDefaultSelectAll(it) },
+                onToggleCheckInSelectAllOnScan = { viewModel.toggleCheckInSelectAllOnScan(it) },
                 onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
                 onToggleOpencvForCaptcha = { viewModel.toggleOpencvForCaptcha(it) },
                 onSetMaxCaptchaRetries = { viewModel.setMaxCaptchaRetries(it) },

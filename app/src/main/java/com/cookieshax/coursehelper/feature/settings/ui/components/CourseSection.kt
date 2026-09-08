@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.feature.settings.ui.items.BooleanSettingItem
+import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
 import com.cookieshax.coursehelper.feature.settings.ui.items.SliderSettingItem
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
@@ -17,7 +18,8 @@ import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 @Composable
 fun CourseSection(
     preferOkHttpOverWebView: Boolean,
-    isCheckInDefaultSelectAll: Boolean,
+    checkInAccountSelectionMode: Int,
+    checkInSelectAllOnScan: Boolean,
     checkInSemaphoreLimit: Int,
     isOpencvEnabledForCaptcha: Boolean,
     maxCaptchaRetries: Int,
@@ -25,7 +27,7 @@ fun CourseSection(
     showUnnecessaryCourses: Boolean,
     cacheAllAccountsOnStartup: Boolean,
     onTogglePreferOkHttp: (Boolean) -> Unit,
-    onToggleCheckInDefaultSelectAll: (Boolean) -> Unit,
+    onToggleCheckInSelectAllOnScan: (Boolean) -> Unit,
     onSetCheckInSemaphoreLimit: (Int) -> Unit,
     onToggleOpencvForCaptcha: (Boolean) -> Unit,
     onSetMaxCaptchaRetries: (Int) -> Unit,
@@ -63,11 +65,20 @@ fun CourseSection(
             )
             AnimatedVisibility(visible = preferOkHttpOverWebView) {
                 Column {
+                    SelectionSettingItem(
+                        title = "签到界面账号选择模式",
+                        currentValue = when (checkInAccountSelectionMode) {
+                            0 -> "全不选"
+                            1 -> "选择加入此课程的账号"
+                            else -> "全选"
+                        },
+                        onClick = { onOpenDialog(SettingsDialogOpen.CHECK_IN_ACCOUNT_SELECTION_MODE) }
+                    )
                     BooleanSettingItem(
-                        title = "签到界面默认全选账号",
-                        subtitle = "启用后签到界面将默认全选账号，否则默认不选",
-                        checked = isCheckInDefaultSelectAll,
-                        onCheckedChange = onToggleCheckInDefaultSelectAll
+                        title = "扫码进入签到时全选账号",
+                        subtitle = "启用后扫码进入签到将默认全选账号。这会导致尝试对所有账号签到，即使非本班学生",
+                        checked = checkInSelectAllOnScan,
+                        onCheckedChange = onToggleCheckInSelectAllOnScan
                     )
                     SliderSettingItem(
                         title = "签到并发数",

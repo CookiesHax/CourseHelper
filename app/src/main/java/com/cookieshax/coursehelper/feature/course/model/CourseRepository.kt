@@ -51,6 +51,12 @@ object CourseRepository {
 
     fun getCourseById(courseId: String): Course? = courseMap[courseId]
 
+    fun getAccountIdsForCourse(courseId: String): List<String> {
+        return accountCoursesCache.filter { entry ->
+            entry.value.any { it.courseId == courseId }
+        }.keys.toList()
+    }
+
     suspend fun getTasksForCourse(course: Course): ApiResult<List<CourseTask>> = coroutineScope {
         try {
             val mainTasksDeferred = async { ApiManager.getTaskList(course) }

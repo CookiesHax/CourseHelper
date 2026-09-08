@@ -68,8 +68,12 @@ import com.cookieshax.coursehelper.feature.checkin.ui.components.normal.NormalIn
 import com.cookieshax.coursehelper.feature.checkin.ui.components.normal.NormalTrigger
 import com.cookieshax.coursehelper.feature.checkin.ui.components.qrcode.QrCodeTrigger
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
+import com.cookieshax.coursehelper.feature.course.model.CourseRepository
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.ui.items.Placeholder
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 sealed class CheckInType {
@@ -211,10 +215,35 @@ fun CheckInScreen(
             }
         }
 
-        if (settingsViewModel.shouldDefaultSelectAll()) {
-            AccountRepository.getCurrentListSnapshot().let { accountList ->
-                checkInViewModel.applyDefaultSelection(taskId, accountList, true)
+        val mode = settingsViewModel.checkInAccountSelectionMode.value
+        val selectAllOnScan = settingsViewModel.checkInSelectAllOnScan.value
+        val allAccounts = AccountRepository.getCurrentListSnapshot()
+
+        if (courseId != null && mode == 1) {
+            val showUnnecessary = settingsViewModel.showUnnecessaryCourses.value
+            val missingAccounts = allAccounts.filter { CourseRepository.getCachedCourses(it.uid) == null }
+            if (missingAccounts.isNotEmpty()) {
+                coroutineScope {
+                    missingAccounts.map { account ->
+                        async { CourseRepository.fetchCourses(account.uid, showUnnecessary) }
+                    }.awaitAll()
+                }
             }
+        }
+
+        val selectedIds = if (courseId == null) {
+            if (selectAllOnScan) allAccounts.map { it.uid }.toSet() else emptySet()
+        } else {
+            when (mode) {
+                0 -> emptySet() // NONE
+                1 -> CourseRepository.getAccountIdsForCourse(courseId).toSet() // SMART
+                2 -> allAccounts.map { it.uid }.toSet() // ALL
+                else -> allAccounts.map { it.uid }.toSet()
+            }
+        }
+
+        if (selectedIds.isNotEmpty()) {
+            checkInViewModel.setSelectedAccountsById(selectedIds)
         }
 
         checkInType.value = mapToCheckInType(checkInState.value.otherId)
