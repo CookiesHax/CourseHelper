@@ -39,6 +39,11 @@ fun AppSection(
         ) {
             SettingSectionHeader(title = "应用")
             ClickableSettingItem(
+                title = "伪装包名",
+                subtitle = packageName,
+                onClick = { onOpenDialog(SettingsDialogOpen.PACKAGE_NAME) }
+            )
+            ClickableSettingItem(
                 title = "设备标识 ID",
                 subtitle = deviceId.ifEmpty { "正在获取..." },
                 onClick = { onOpenDialog(SettingsDialogOpen.DEVICE_ID) }
@@ -47,11 +52,6 @@ fun AppSection(
                 title = "User-Agent",
                 subtitle = userAgent.ifEmpty { "无" },
                 onClick = { onOpenDialog(SettingsDialogOpen.USER_AGENT) }
-            )
-            ClickableSettingItem(
-                title = "包名",
-                subtitle = packageName,
-                onClick = { onOpenDialog(SettingsDialogOpen.PACKAGE_NAME) }
             )
             SelectionSettingItem(
                 title = "密码登录端点",

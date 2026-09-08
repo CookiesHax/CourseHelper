@@ -284,7 +284,7 @@ object NetworkClient {
         val currentId = getOrGenerateIdSync()
 
         val userAgentTemp =
-            "(device:$device) Language/zh_CN com.chaoxing.mobile/ChaoXingStudy_${productId}_${version}_android_phone_${versionCode}_${apiVersion} (@Kalimdor)_$currentId"
+            "(device:$device) Language/zh_CN ${ChaoXingAppInfo.packageName}/ChaoXingStudy_${productId}_${version}_android_phone_${versionCode}_${apiVersion} (@Kalimdor)_$currentId"
 
         val schildInput = "(schild:${Constant.SCHILD_SALT}) $userAgentTemp"
         val schild = EncryptionUtils.md5Hash(schildInput)

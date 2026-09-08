@@ -295,6 +295,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val name = packageName.ifBlank { "com.chaoxing.mobile" }
             repository.setPackageName(name)
+            // 重新生成 UA
+            repository.setUserAgent("")
+            _userAgent.value = NetworkClient.getUserAgent()
         }
     }
 

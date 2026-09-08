@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,16 +27,21 @@ fun PackageNameDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("修改包名") },
+        title = { Text("修改伪装包名") },
         text = {
             Column {
-                Text("留空则使用默认包名")
+                Text("修改伪装包名会导致 User-Agent 发生变化。")
+                Text(
+                    text = "留空则使用默认包名 (com.chaoxing.mobile)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("包名") },
+                    label = { Text("伪装包名") },
                     placeholder = { Text("输入自定义包名...") }
                 )
             }
