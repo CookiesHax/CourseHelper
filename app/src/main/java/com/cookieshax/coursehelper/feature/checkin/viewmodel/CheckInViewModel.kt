@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
-import com.cookieshax.coursehelper.core.database.entity.Account
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.checkin.model.Captcha
 import com.cookieshax.coursehelper.feature.checkin.model.CaptchaSolver
@@ -81,7 +80,6 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
 
     private val settingsRepository = SettingsRepository(application)
     val faceCache = FaceCache()
-    private var lastDefaultedTaskId: String? = null
 
     // --- UI Actions ---
 
@@ -93,10 +91,6 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         _selectedIds.value = ids
     }
 
-    fun setSelectedAccounts(accounts: List<Account>) {
-        setSelectedAccountsById(accounts.map { it.uid }.toSet())
-    }
-
     fun setAccountSelected(uid: String, isSelected: Boolean) {
         _selectedIds.update { current ->
             if (isSelected) current + uid else current - uid
@@ -106,13 +100,6 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     fun toggleAccountsSelection(uids: List<String>, shouldSelect: Boolean) {
         _selectedIds.update { current ->
             if (shouldSelect) current + uids else current - uids.toSet()
-        }
-    }
-
-    fun applyDefaultSelection(taskId: String, accounts: List<Account>, shouldDefault: Boolean) {
-        if (shouldDefault && lastDefaultedTaskId != taskId) {
-            setSelectedAccounts(accounts)
-            lastDefaultedTaskId = taskId
         }
     }
 
@@ -152,7 +139,6 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         if (result != null) {
             currentRequest.deferred.complete(result)
         } else {
-            val finalCaptcha = updatedCaptcha
             val currentParams = currentRequest.params
             if (currentParams is CheckInParams.QrCode) {
                 val refreshResult =
@@ -163,7 +149,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             }
-            val refreshedCaptcha = finalCaptcha.load()
+            val refreshedCaptcha = updatedCaptcha.load()
 
             _manualCaptchaQueue.update { queue ->
                 val updatedQueue = queue.toMutableList()

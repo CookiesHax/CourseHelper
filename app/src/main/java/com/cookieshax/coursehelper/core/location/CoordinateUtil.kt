@@ -37,7 +37,7 @@ object CoordinateUtil {
     }
 
     private fun outOfChina(lng: Double, lat: Double): Boolean {
-        return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271
+        return lng !in 72.004 .. 137.8347 || lat < 0.8293 || lat > 55.8271
     }
 
     private fun transformLat(x: Double, y: Double): Double {
