@@ -33,6 +33,7 @@ class SettingsRepository(private val context: Context) {
     private val userAgentKey = stringPreferencesKey("user_agent")
     private val packageNameKey = stringPreferencesKey("package_name")
     private val locationMethodKey = stringPreferencesKey("location_method")
+    private val cacheAllAccountsOnStartupKey = booleanPreferencesKey("cache_all_accounts_on_startup")
 
     val userAgent: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
@@ -47,6 +48,11 @@ class SettingsRepository(private val context: Context) {
     val locationMethod: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
             preferences[locationMethodKey] ?: LocationMethod.BAIDU.name
+        }
+
+    val cacheAllAccountsOnStartup: Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[cacheAllAccountsOnStartupKey] == true
         }
 
     val isDynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -218,6 +224,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setLocationMethod(method: String) {
         context.settingsDataStore.edit { preferences ->
             preferences[locationMethodKey] = method
+        }
+    }
+
+    suspend fun setCacheAllAccountsOnStartup(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[cacheAllAccountsOnStartupKey] = enabled
         }
     }
 }

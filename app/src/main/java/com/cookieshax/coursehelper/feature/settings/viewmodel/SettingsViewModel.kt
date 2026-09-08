@@ -96,6 +96,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _locationMethod = MutableStateFlow(LocationMethod.BAIDU.name)
     val locationMethod: StateFlow<String> = _locationMethod.asStateFlow()
 
+    private val _cacheAllAccountsOnStartup = MutableStateFlow(false)
+    val cacheAllAccountsOnStartup: StateFlow<Boolean> = _cacheAllAccountsOnStartup.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Initial sync fetch of all values
@@ -114,6 +117,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _userAgent.value = repository.userAgent.first()
             _packageName.value = repository.packageName.first()
             _locationMethod.value = repository.locationMethod.first()
+            _cacheAllAccountsOnStartup.value = repository.cacheAllAccountsOnStartup.first()
             _deviceId.value = NetworkClient.getDeviceId()
 
             _isReady.value = true
@@ -172,6 +176,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch {
                 repository.locationMethod.collect {
                     _locationMethod.value = it
+                }
+            }
+            launch {
+                repository.cacheAllAccountsOnStartup.collect {
+                    _cacheAllAccountsOnStartup.value = it
                 }
             }
         }
@@ -304,6 +313,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setLocationMethod(method: String) {
         viewModelScope.launch {
             repository.setLocationMethod(method)
+        }
+    }
+
+    fun toggleCacheAllAccountsOnStartup(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setCacheAllAccountsOnStartup(enabled)
         }
     }
 

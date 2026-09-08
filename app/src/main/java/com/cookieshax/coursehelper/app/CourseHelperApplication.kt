@@ -12,6 +12,8 @@ import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.NetworkClient
 import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.utils.FileUtils
+import com.cookieshax.coursehelper.feature.account.model.AccountRepository
+import com.cookieshax.coursehelper.feature.course.model.CourseRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,6 +64,31 @@ class CourseHelperApplication : Application() {
                     LocationMethod.BAIDU
                 }
                 LocationService.setLocationMethod(method)
+            }
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            val settings = SettingsRepository(applicationContext)
+            val showUnnecessaryCourses = settings.showUnnecessaryCourses.first()
+            if (settings.cacheAllAccountsOnStartup.first()) {
+                // 等待账号列表加载
+                val accounts = AccountRepository.accountList.value
+                if (accounts.isEmpty()) {
+                    // 如果当前为空 尝试等待第一次发射
+                    AccountRepository.accountList.first().forEach { account ->
+                        CourseRepository.fetchCourses(account.uid, showUnnecessaryCourses)
+                    }
+                } else {
+                    accounts.forEach { account ->
+                        CourseRepository.fetchCourses(account.uid, showUnnecessaryCourses)
+                    }
+                }
+            } else {
+                // 仅缓存活动账号
+                val activeId = AccountRepository.activeAccountIdFlow.value
+                if (activeId != null) {
+                    CourseRepository.fetchCourses(activeId, showUnnecessaryCourses)
+                }
             }
         }
 

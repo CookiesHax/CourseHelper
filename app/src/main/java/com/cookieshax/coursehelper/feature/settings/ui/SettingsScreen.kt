@@ -68,6 +68,7 @@ fun SettingsScreen(
     val themeColor by viewModel.themeColor.collectAsState()
     val showUnsupportedTasks by viewModel.showUnsupportedTasks.collectAsState()
     val showUnnecessaryCourses by viewModel.showUnnecessaryCourses.collectAsState()
+    val cacheAllAccountsOnStartup by viewModel.cacheAllAccountsOnStartup.collectAsState()
     val maxImageCacheSize by viewModel.maxImageCacheSize.collectAsState()
     val userAgent by viewModel.userAgent.collectAsState()
     val packageName by viewModel.packageName.collectAsState()
@@ -241,6 +242,7 @@ fun SettingsScreen(
                 maxCaptchaRetries = maxCaptchaRetries,
                 showUnsupportedTasks = showUnsupportedTasks,
                 showUnnecessaryCourses = showUnnecessaryCourses,
+                cacheAllAccountsOnStartup = cacheAllAccountsOnStartup,
                 onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
                 onToggleCheckInDefaultSelectAll = { viewModel.toggleCheckInDefaultSelectAll(it) },
                 onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
@@ -248,6 +250,7 @@ fun SettingsScreen(
                 onSetMaxCaptchaRetries = { viewModel.setMaxCaptchaRetries(it) },
                 onToggleShowUnsupportedTasks = { viewModel.toggleShowUnsupportedTasks(it) },
                 onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) },
+                onToggleCacheAllAccountsOnStartup = { viewModel.toggleCacheAllAccountsOnStartup(it) },
                 onOpenDialog = { viewModel.setActiveDialog(it) }
             )
 

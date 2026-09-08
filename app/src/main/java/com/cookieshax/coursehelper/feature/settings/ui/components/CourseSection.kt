@@ -23,6 +23,7 @@ fun CourseSection(
     maxCaptchaRetries: Int,
     showUnsupportedTasks: Boolean,
     showUnnecessaryCourses: Boolean,
+    cacheAllAccountsOnStartup: Boolean,
     onTogglePreferOkHttp: (Boolean) -> Unit,
     onToggleCheckInDefaultSelectAll: (Boolean) -> Unit,
     onSetCheckInSemaphoreLimit: (Int) -> Unit,
@@ -30,6 +31,7 @@ fun CourseSection(
     onSetMaxCaptchaRetries: (Int) -> Unit,
     onToggleShowUnsupportedTasks: (Boolean) -> Unit,
     onToggleShowUnnecessaryCourses: (Boolean) -> Unit,
+    onToggleCacheAllAccountsOnStartup: (Boolean) -> Unit,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
     Card(
@@ -47,6 +49,12 @@ fun CourseSection(
                 .padding(bottom = 4.dp)
         ) {
             SettingSectionHeader(title = "课程")
+            BooleanSettingItem(
+                title = "启动时缓存所有账号的课程",
+                subtitle = "启用后将在应用启动时缓存所有账号的课程信息，否则仅缓存当前活动的账号",
+                checked = cacheAllAccountsOnStartup,
+                onCheckedChange = onToggleCacheAllAccountsOnStartup
+            )
             BooleanSettingItem(
                 title = "优先使用OkHttp签到",
                 subtitle = "启用后将优先使用OkHttp进行签到，而非WebView",
