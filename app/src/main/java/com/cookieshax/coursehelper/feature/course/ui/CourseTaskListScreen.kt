@@ -190,12 +190,20 @@ fun CourseTaskListScreen(
                                                 )
                                             } else if (clickedTask.activeType == 45) {
                                                 scope.launch {
-                                                    when (val result = ApiManager.getNotice(clickedTask)) {
+                                                    when (val result =
+                                                        ApiManager.getNoticeTask(clickedTask)) {
                                                         is ApiResult.Success -> {
-                                                            val json = StringUtils.parseJson(result.data)
-                                                            val shareUrl = json?.getAsJsonObject("msg")?.get("shareUrl")?.asString
+                                                            val json =
+                                                                StringUtils.parseJson(result.data)
+                                                            val shareUrl =
+                                                                json?.getAsJsonObject("msg")
+                                                                    ?.get("shareUrl")?.asString
                                                             if (!shareUrl.isNullOrEmpty()) {
-                                                                navController.navigate(WebViewRoute(shareUrl)) {
+                                                                navController.navigate(
+                                                                    WebViewRoute(
+                                                                        shareUrl
+                                                                    )
+                                                                ) {
                                                                     launchSingleTop = true
                                                                 }
                                                             } else {

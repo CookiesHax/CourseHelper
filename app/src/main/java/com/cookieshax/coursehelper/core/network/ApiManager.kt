@@ -283,7 +283,7 @@ object ApiManager {
         )
     }
 
-    suspend fun getNotice(task: CourseTask): ApiResult<String> {
+    suspend fun getNoticeTask(task: CourseTask): ApiResult<String> {
         val uid = AccountRepository.activeAccountIdFlow.value ?: return ApiResult.Error("未登录")
 
         val params: Map<String, Any?> = mapOf(
