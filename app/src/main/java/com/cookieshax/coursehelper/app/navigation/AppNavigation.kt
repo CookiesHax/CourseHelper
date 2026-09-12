@@ -20,6 +20,7 @@ import com.cookieshax.coursehelper.app.main.MainScreen
 import com.cookieshax.coursehelper.feature.account.ui.TagManagerScreen
 import com.cookieshax.coursehelper.feature.camera.CameraScreen
 import com.cookieshax.coursehelper.feature.course.ui.CourseTaskListScreen
+import com.cookieshax.coursehelper.feature.course.ui.NoticeScreen
 import com.cookieshax.coursehelper.feature.login.LoginScreen
 import com.cookieshax.coursehelper.feature.map.MapScreen
 import com.cookieshax.coursehelper.feature.settings.ui.SettingsScreen
@@ -141,6 +142,13 @@ fun AppNavigation() {
                     taskId = route.taskId,
                     navController = navController,
                     courseId = route.courseId
+                )
+            }
+            composable<NoticeRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<NoticeRoute>()
+                NoticeScreen(
+                    url = route.url,
+                    navController = navController
                 )
             }
         }

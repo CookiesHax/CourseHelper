@@ -44,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.cookieshax.coursehelper.app.navigation.CheckInRoute
 import com.cookieshax.coursehelper.app.navigation.MapRoute
+import com.cookieshax.coursehelper.app.navigation.NoticeRoute
 import com.cookieshax.coursehelper.app.navigation.WebViewRoute
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.ApiManager
@@ -200,7 +201,7 @@ fun CourseTaskListScreen(
                                                                     ?.get("shareUrl")?.asString
                                                             if (!shareUrl.isNullOrEmpty()) {
                                                                 navController.navigate(
-                                                                    WebViewRoute(
+                                                                    NoticeRoute(
                                                                         shareUrl
                                                                     )
                                                                 ) {

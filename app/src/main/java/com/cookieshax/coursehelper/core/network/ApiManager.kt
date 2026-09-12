@@ -301,6 +301,9 @@ object ApiManager {
         )
     }
 
+    suspend fun getNoticeContent(noticeUrl: String): ApiResult<String> =
+        NetworkClient.get(noticeUrl)
+
     // 上传文件
     suspend fun uploadFile(file: File, uid: String? = null): String? {
         val userId = uid ?: (AccountRepository.activeAccountIdFlow.value ?: return null)
@@ -542,6 +545,69 @@ object ApiManager {
 
     suspend fun downloadImage(url: String, asUser: String? = null): ApiResult<ByteArray> =
         NetworkClient.getBytes(url, asUser = asUser)
+
+    suspend fun getAttachmentPreviewUrl(
+        objectId: String,
+        fileName: String,
+        resid: String,
+        download: Boolean = false
+    ): ApiResult<String> {
+        val formData = mapOf(
+            "objectId" to objectId,
+            "fileName" to fileName,
+            "download" to download.toString(),
+            "resid" to resid
+        )
+        val headers = mapOf(
+            "Referer" to "https://sharewh3.xuexi365.com/",
+            "Origin" to "https://sharewh3.xuexi365.com"
+        )
+        val result = NetworkClient.post(
+            "https://noteyd.xuexi365.com/screen/note_note/getPreviewUrl",
+            formData,
+            headers = headers
+        )
+        return when (result) {
+            is ApiResult.Success -> {
+                val json = StringUtils.parseJson(result.data)
+                if (json?.getIntOrDefault("result", 0) == 1) {
+                    ApiResult.Success(json.getStringOrDefault("msg", ""))
+                } else {
+                    ApiResult.Error(
+                        json?.getStringOrDefault("msg", "获取预览地址失败") ?: "获取预览地址失败"
+                    )
+                }
+            }
+
+            is ApiResult.Error -> result
+        }
+    }
+
+    suspend fun getAttachmentDownloadUrl(
+        objectId: String,
+        resid: String
+    ): ApiResult<String> {
+        val url =
+            "https://noteyd.xuexi365.com/screen/note_note/files/status/$objectId?resid=$resid&puid="
+        val headers = mapOf(
+            "Referer" to "https://sharewh3.xuexi365.com/",
+            "Origin" to "https://sharewh3.xuexi365.com"
+        )
+        return when (val result = NetworkClient.get(url, headers = headers)) {
+            is ApiResult.Success -> {
+                val json = StringUtils.parseJson(result.data)
+                if (json?.getBooleanOrDefault("status", false) == true) {
+                    ApiResult.Success(json.getStringOrDefault("download", ""))
+                } else {
+                    ApiResult.Error(
+                        json?.getStringOrDefault("msg", "获取下载地址失败") ?: "获取下载地址失败"
+                    )
+                }
+            }
+
+            is ApiResult.Error -> result
+        }
+    }
 
     suspend fun submitCaptcha(
         xValue: Int,

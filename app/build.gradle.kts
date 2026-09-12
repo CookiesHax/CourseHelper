@@ -300,6 +300,9 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
 
+    // Jsoup
+    implementation(libs.jsoup)
+
     // Retrofit
     implementation(libs.coil.compose)
 

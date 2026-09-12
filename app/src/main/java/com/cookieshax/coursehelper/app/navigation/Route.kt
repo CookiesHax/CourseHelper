@@ -29,3 +29,6 @@ object CameraRoute
 
 @Serializable
 data class CheckInRoute(val url: String, val taskId: String, val courseId: String? = null)
+
+@Serializable
+data class NoticeRoute(val url: String)
