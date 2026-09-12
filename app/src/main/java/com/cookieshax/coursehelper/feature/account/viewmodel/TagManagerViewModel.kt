@@ -84,7 +84,7 @@ class TagManagerViewModel : ViewModel() {
             if (accountUids.isNotEmpty()) {
                 AccountRepository.associateTagWithAccounts(tag.tagId, accountUids)
             } else {
-                // 如果未选择帐户则清除现有关联
+                // 如果未选择账户则清除现有关联
                 AccountRepository.clearTagAssociations(tag.tagId)
             }
         }
