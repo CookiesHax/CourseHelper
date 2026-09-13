@@ -233,6 +233,13 @@ fun CheckInScreen(
             }
         }
 
+        if (courseId != null) {
+            val classIds = CourseRepository.getAccountIdsForCourse(courseId).toSet()
+            checkInViewModel.setClassAccountIds(classIds)
+        } else {
+            checkInViewModel.setClassAccountIds(emptySet())
+        }
+
         val selectedIds = if (courseId == null) {
             if (selectAllOnScan) allAccounts.map { it.uid }.toSet() else emptySet()
         } else {

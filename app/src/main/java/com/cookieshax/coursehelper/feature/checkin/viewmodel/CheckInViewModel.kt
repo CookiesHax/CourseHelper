@@ -59,6 +59,9 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     val manualCaptchaQueue: StateFlow<List<ManualCaptchaRequest>> =
         _manualCaptchaQueue.asStateFlow()
 
+    private val _classAccountIds = MutableStateFlow<Set<String>>(emptySet())
+    val classAccountIds: StateFlow<Set<String>> = _classAccountIds.asStateFlow()
+
     // Gesture State
     private val _gesturePoints = MutableStateFlow<List<Int>>(emptyList())
     val gesturePoints: StateFlow<List<Int>> = _gesturePoints.asStateFlow()
@@ -110,6 +113,10 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         _checkedInUids.update { current ->
             if (isCheckedIn) current + uid else current - uid
         }
+    }
+
+    fun setClassAccountIds(ids: Set<String>) {
+        _classAccountIds.value = ids
     }
 
     fun clearResults() {

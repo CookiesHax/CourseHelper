@@ -42,6 +42,7 @@ fun CheckInLayout(
     val activeUploadAccountId by viewModel.activeUploadAccountId.collectAsState()
     val checkedInUids by viewModel.checkedInUids.collectAsState()
     val manualCaptchaQueue by viewModel.manualCaptchaQueue.collectAsState()
+    val classAccountIds by viewModel.classAccountIds.collectAsState()
 
     val configuration = LocalConfiguration.current
     val isTablet = configuration.smallestScreenWidthDp >= 600
@@ -81,6 +82,7 @@ fun CheckInLayout(
                         activeUploadAccountId = activeUploadAccountId,
                         uploadedObjectIds = uploadedObjectIds,
                         checkedInUids = checkedInUids,
+                        classAccountIds = classAccountIds,
                         onSelectionChange = { uid, isSelected ->
                             viewModel.setAccountSelected(uid, isSelected)
                         },
@@ -118,6 +120,7 @@ fun CheckInLayout(
                     activeUploadAccountId = activeUploadAccountId,
                     uploadedObjectIds = uploadedObjectIds,
                     checkedInUids = checkedInUids,
+                    classAccountIds = classAccountIds,
                     onSelectionChange = { uid, isSelected ->
                         viewModel.setAccountSelected(uid, isSelected)
                     },

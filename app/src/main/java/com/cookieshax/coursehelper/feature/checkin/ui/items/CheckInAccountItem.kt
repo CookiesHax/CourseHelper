@@ -38,7 +38,8 @@ fun CheckInAccountItem(
     onUploadImage: () -> Unit,
     onCameraClick: () -> Unit,
     isUploadSuccess: Boolean,
-    isCheckedIn: Boolean = false
+    isCheckedIn: Boolean = false,
+    isNotInClass: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -86,6 +87,20 @@ fun CheckInAccountItem(
                             Text(
                                 text = "已签到",
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    if (isNotInClass) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = Color.Red,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "非本班",
+                                color = Color.White,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             )

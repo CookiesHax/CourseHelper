@@ -23,6 +23,7 @@ fun AccountList(
     uploadedObjectIds: Map<String, String>?,
     modifier: Modifier = Modifier,
     checkedInUids: Set<String> = emptySet(),
+    classAccountIds: Set<String> = emptySet(),
     onSelectionChange: (String, Boolean) -> Unit,
     onToggleIds: (List<String>, Boolean) -> Unit,
     onUploadImage: ((String) -> Unit)?,
@@ -60,7 +61,8 @@ fun AccountList(
                         }
                     },
                     isUploadSuccess = uploadedObjectIds?.containsKey(account.uid) == true,
-                    isCheckedIn = checkedInUids.contains(account.uid)
+                    isCheckedIn = checkedInUids.contains(account.uid),
+                    isNotInClass = classAccountIds.isNotEmpty() && !classAccountIds.contains(account.uid)
                 )
             }
         }
