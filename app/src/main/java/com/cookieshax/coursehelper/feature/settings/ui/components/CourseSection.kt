@@ -26,6 +26,7 @@ fun CourseSection(
     showUnsupportedTasks: Boolean,
     showUnnecessaryCourses: Boolean,
     cacheAllAccountsOnStartup: Boolean,
+    excludeCheckedInAccounts: Boolean,
     onTogglePreferOkHttp: (Boolean) -> Unit,
     onToggleCheckInSelectAllOnScan: (Boolean) -> Unit,
     onSetCheckInSemaphoreLimit: (Int) -> Unit,
@@ -34,6 +35,7 @@ fun CourseSection(
     onToggleShowUnsupportedTasks: (Boolean) -> Unit,
     onToggleShowUnnecessaryCourses: (Boolean) -> Unit,
     onToggleCacheAllAccountsOnStartup: (Boolean) -> Unit,
+    onToggleExcludeCheckedInAccounts: (Boolean) -> Unit,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
     Card(
@@ -79,6 +81,12 @@ fun CourseSection(
                         subtitle = "启用后扫码进入签到将默认全选账号。这会导致尝试对所有账号签到，即使非本班学生",
                         checked = checkInSelectAllOnScan,
                         onCheckedChange = onToggleCheckInSelectAllOnScan
+                    )
+                    BooleanSettingItem(
+                        title = "排除已签到的账户",
+                        subtitle = "进入签到时自动取消勾选已经签到成功的账户",
+                        checked = excludeCheckedInAccounts,
+                        onCheckedChange = onToggleExcludeCheckedInAccounts
                     )
                     SliderSettingItem(
                         title = "签到并发数",

@@ -40,6 +40,7 @@ fun CheckInLayout(
     val resultsMap by viewModel.resultsMap.collectAsState()
     val uploadedObjectIds by viewModel.uploadedObjectIds.collectAsState()
     val activeUploadAccountId by viewModel.activeUploadAccountId.collectAsState()
+    val checkedInUids by viewModel.checkedInUids.collectAsState()
     val manualCaptchaQueue by viewModel.manualCaptchaQueue.collectAsState()
 
     val configuration = LocalConfiguration.current
@@ -79,6 +80,7 @@ fun CheckInLayout(
                         isNeedPhoto = isNeedPhoto,
                         activeUploadAccountId = activeUploadAccountId,
                         uploadedObjectIds = uploadedObjectIds,
+                        checkedInUids = checkedInUids,
                         onSelectionChange = { uid, isSelected ->
                             viewModel.setAccountSelected(uid, isSelected)
                         },
@@ -115,6 +117,7 @@ fun CheckInLayout(
                     isNeedPhoto = isNeedPhoto,
                     activeUploadAccountId = activeUploadAccountId,
                     uploadedObjectIds = uploadedObjectIds,
+                    checkedInUids = checkedInUids,
                     onSelectionChange = { uid, isSelected ->
                         viewModel.setAccountSelected(uid, isSelected)
                     },

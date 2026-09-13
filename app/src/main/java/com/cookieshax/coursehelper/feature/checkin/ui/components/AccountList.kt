@@ -21,11 +21,12 @@ fun AccountList(
     isNeedPhoto: Boolean,
     activeUploadAccountId: String?,
     uploadedObjectIds: Map<String, String>?,
+    modifier: Modifier = Modifier,
+    checkedInUids: Set<String> = emptySet(),
     onSelectionChange: (String, Boolean) -> Unit,
     onToggleIds: (List<String>, Boolean) -> Unit,
     onUploadImage: ((String) -> Unit)?,
     onOpenCamera: ((String) -> Unit)?,
-    modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         AccountTagBar(
@@ -58,7 +59,8 @@ fun AccountList(
                             onOpenCamera?.let { it(account.uid) }
                         }
                     },
-                    isUploadSuccess = uploadedObjectIds?.containsKey(account.uid) == true
+                    isUploadSuccess = uploadedObjectIds?.containsKey(account.uid) == true,
+                    isCheckedIn = checkedInUids.contains(account.uid)
                 )
             }
         }

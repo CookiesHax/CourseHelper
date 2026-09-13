@@ -46,6 +46,9 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     private val _resultsMap = MutableStateFlow<Map<String, ApiResult<String>>>(emptyMap())
     val resultsMap: StateFlow<Map<String, ApiResult<String>>> = _resultsMap.asStateFlow()
 
+    private val _checkedInUids = MutableStateFlow<Set<String>>(emptySet())
+    val checkedInUids: StateFlow<Set<String>> = _checkedInUids.asStateFlow()
+
     private val _activeUploadAccountId = MutableStateFlow<String?>(null)
     val activeUploadAccountId: StateFlow<String?> = _activeUploadAccountId.asStateFlow()
 
@@ -100,6 +103,12 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     fun toggleAccountsSelection(uids: List<String>, shouldSelect: Boolean) {
         _selectedIds.update { current ->
             if (shouldSelect) current + uids else current - uids.toSet()
+        }
+    }
+
+    fun setCheckedInStatus(uid: String, isCheckedIn: Boolean) {
+        _checkedInUids.update { current ->
+            if (isCheckedIn) current + uid else current - uid
         }
     }
 

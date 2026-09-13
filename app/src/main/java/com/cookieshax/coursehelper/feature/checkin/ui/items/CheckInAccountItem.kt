@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Photo
@@ -16,10 +18,12 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.utils.maskedPhone
@@ -33,11 +37,13 @@ fun CheckInAccountItem(
     isNeedPhoto: Boolean,
     onUploadImage: () -> Unit,
     onCameraClick: () -> Unit,
-    isUploadSuccess: Boolean
+    isUploadSuccess: Boolean,
+    isCheckedIn: Boolean = false
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .alpha(if (isCheckedIn) 0.6f else 1.0f)
             .clickable(enabled = isNeedPhoto) { onCameraClick() },
         colors = CardDefaults.cardColors(
             containerColor = CardDefaults.cardColors().containerColor
@@ -71,6 +77,20 @@ fun CheckInAccountItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
+                    if (isCheckedIn) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "已签到",
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
             }
 

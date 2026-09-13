@@ -651,6 +651,18 @@ object ApiManager {
         )
     }
 
+    suspend fun getPreCheckInfo(taskId: String, uid: String): ApiResult<String> {
+        val params = mutableMapOf(
+            "activeId" to taskId,
+        )
+
+        return NetworkClient.get(
+            "https://mobilelearn.chaoxing.com/widget/sign/pcStuSignController/preSign",
+            params = params,
+            asUser = uid
+        )
+    }
+
     suspend fun checkIn(
         uid: String,
         activeId: String,

@@ -71,6 +71,7 @@ fun SettingsScreen(
     val showUnsupportedTasks by viewModel.showUnsupportedTasks.collectAsState()
     val showUnnecessaryCourses by viewModel.showUnnecessaryCourses.collectAsState()
     val cacheAllAccountsOnStartup by viewModel.cacheAllAccountsOnStartup.collectAsState()
+    val excludeCheckedInAccounts by viewModel.excludeCheckedInAccounts.collectAsState()
     val maxImageCacheSize by viewModel.maxImageCacheSize.collectAsState()
     val userAgent by viewModel.userAgent.collectAsState()
     val packageName by viewModel.packageName.collectAsState()
@@ -257,6 +258,7 @@ fun SettingsScreen(
                 showUnsupportedTasks = showUnsupportedTasks,
                 showUnnecessaryCourses = showUnnecessaryCourses,
                 cacheAllAccountsOnStartup = cacheAllAccountsOnStartup,
+                excludeCheckedInAccounts = excludeCheckedInAccounts,
                 onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
                 onToggleCheckInSelectAllOnScan = { viewModel.toggleCheckInSelectAllOnScan(it) },
                 onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
@@ -265,6 +267,7 @@ fun SettingsScreen(
                 onToggleShowUnsupportedTasks = { viewModel.toggleShowUnsupportedTasks(it) },
                 onToggleShowUnnecessaryCourses = { viewModel.toggleShowUnnecessaryCourses(it) },
                 onToggleCacheAllAccountsOnStartup = { viewModel.toggleCacheAllAccountsOnStartup(it) },
+                onToggleExcludeCheckedInAccounts = { viewModel.toggleExcludeCheckedInAccounts(it) },
                 onOpenDialog = { viewModel.setActiveDialog(it) }
             )
 

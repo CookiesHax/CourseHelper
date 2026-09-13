@@ -37,6 +37,7 @@ class SettingsRepository(private val context: Context) {
     private val locationMethodKey = stringPreferencesKey("location_method")
     private val cacheAllAccountsOnStartupKey =
         booleanPreferencesKey("cache_all_accounts_on_startup")
+    private val excludeCheckedInAccountsKey = booleanPreferencesKey("exclude_checked_in_accounts")
 
     val userAgent: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
@@ -56,6 +57,11 @@ class SettingsRepository(private val context: Context) {
     val cacheAllAccountsOnStartup: Flow<Boolean> = context.settingsDataStore.data
         .map { preferences ->
             preferences[cacheAllAccountsOnStartupKey] == true
+        }
+
+    val excludeCheckedInAccounts: Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences ->
+            preferences[excludeCheckedInAccountsKey] == true
         }
 
     val isDynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data
@@ -244,6 +250,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setCacheAllAccountsOnStartup(enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[cacheAllAccountsOnStartupKey] = enabled
+        }
+    }
+
+    suspend fun setExcludeCheckedInAccounts(enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[excludeCheckedInAccountsKey] = enabled
         }
     }
 }

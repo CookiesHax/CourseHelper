@@ -219,9 +219,11 @@ fun CheckInScreen(
         val selectAllOnScan = settingsViewModel.checkInSelectAllOnScan.value
         val allAccounts = AccountRepository.getCurrentListSnapshot()
 
+        // 智能选择预加载课程数据
         if (courseId != null && mode == 1) {
             val showUnnecessary = settingsViewModel.showUnnecessaryCourses.value
-            val missingAccounts = allAccounts.filter { CourseRepository.getCachedCourses(it.uid) == null }
+            val missingAccounts =
+                allAccounts.filter { CourseRepository.getCachedCourses(it.uid) == null }
             if (missingAccounts.isNotEmpty()) {
                 coroutineScope {
                     missingAccounts.map { account ->
@@ -244,6 +246,24 @@ fun CheckInScreen(
 
         if (selectedIds.isNotEmpty()) {
             checkInViewModel.setSelectedAccountsById(selectedIds)
+        }
+
+        // 检查已签到状态并过滤
+        val currentExcludeSetting = settingsViewModel.excludeCheckedInAccounts.value
+        coroutineScope {
+            allAccounts.map { account ->
+                launch {
+                    val preCheck = ApiManager.getPreCheckInfo(taskId, account.uid)
+                    if (preCheck is ApiResult.Success) {
+                        if (preCheck.data.contains("签到成功")) {
+                            checkInViewModel.setCheckedInStatus(account.uid, true)
+                            if (currentExcludeSetting && account.uid in selectedIds) {
+                                checkInViewModel.setAccountSelected(account.uid, false)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         checkInType.value = mapToCheckInType(checkInState.value.otherId)

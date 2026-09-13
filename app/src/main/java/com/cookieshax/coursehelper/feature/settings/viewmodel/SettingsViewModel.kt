@@ -103,6 +103,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _cacheAllAccountsOnStartup = MutableStateFlow(false)
     val cacheAllAccountsOnStartup: StateFlow<Boolean> = _cacheAllAccountsOnStartup.asStateFlow()
 
+    private val _excludeCheckedInAccounts = MutableStateFlow(false)
+    val excludeCheckedInAccounts: StateFlow<Boolean> = _excludeCheckedInAccounts.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Initial sync fetch of all values
@@ -123,6 +126,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _packageName.value = repository.packageName.first()
             _locationMethod.value = repository.locationMethod.first()
             _cacheAllAccountsOnStartup.value = repository.cacheAllAccountsOnStartup.first()
+            _excludeCheckedInAccounts.value = repository.excludeCheckedInAccounts.first()
             _deviceId.value = NetworkClient.getDeviceId()
 
             _isReady.value = true
@@ -191,6 +195,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch {
                 repository.cacheAllAccountsOnStartup.collect {
                     _cacheAllAccountsOnStartup.value = it
+                }
+            }
+            launch {
+                repository.excludeCheckedInAccounts.collect {
+                    _excludeCheckedInAccounts.value = it
                 }
             }
         }
@@ -331,6 +340,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleCacheAllAccountsOnStartup(enabled: Boolean) {
         viewModelScope.launch {
             repository.setCacheAllAccountsOnStartup(enabled)
+        }
+    }
+
+    fun toggleExcludeCheckedInAccounts(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setExcludeCheckedInAccounts(enabled)
         }
     }
 
