@@ -36,7 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.checkin.model.CheckInParams
 import com.cookieshax.coursehelper.feature.checkin.model.LocationCheckInStrategy
-import com.cookieshax.coursehelper.feature.checkin.ui.CheckInState
+import com.cookieshax.coursehelper.feature.checkin.model.CheckInState
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds

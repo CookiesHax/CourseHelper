@@ -1,7 +1,6 @@
 package com.cookieshax.coursehelper.feature.checkin.ui
 
 import android.content.ClipData
-import androidx.annotation.Keep
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +57,9 @@ import com.cookieshax.coursehelper.core.utils.getStringOrEmpty
 import com.cookieshax.coursehelper.core.utils.getStringOrNull
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
+import com.cookieshax.coursehelper.feature.checkin.model.CheckInState
+import com.cookieshax.coursehelper.feature.checkin.model.CheckInType
+import com.cookieshax.coursehelper.feature.checkin.model.mapToCheckInType
 import com.cookieshax.coursehelper.feature.checkin.ui.components.CheckInLayout
 import com.cookieshax.coursehelper.feature.checkin.ui.components.code.CodeInputComponent
 import com.cookieshax.coursehelper.feature.checkin.ui.components.code.CodeTrigger
@@ -97,6 +99,7 @@ fun CheckInScreen(
     val settingsViewModel: SettingsViewModel = viewModel()
     val semaphoreLimit = settingsViewModel.checkInSemaphoreLimit
 
+    // 获取签到任务信息
     LaunchedEffect(taskId) {
         when (val response = ApiManager.getCheckInTaskInfo(taskId)) {
             is ApiResult.Success -> {
@@ -229,6 +232,7 @@ fun CheckInScreen(
         isLoading.value = false
     }
 
+    // UI
     Surface(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -448,6 +452,7 @@ fun CheckInScreen(
         }
     }
 
+    // 拍照签到说明对话框
     if (showPhotoDialog.value) {
         AlertDialog(
             onDismissRequest = { showPhotoDialog.value = false },
@@ -467,6 +472,7 @@ fun CheckInScreen(
         )
     }
 
+    // 任务详情对话框
     if (showInfoDialog.value) {
         val clipboard = LocalClipboard.current
         val scope = rememberCoroutineScope()

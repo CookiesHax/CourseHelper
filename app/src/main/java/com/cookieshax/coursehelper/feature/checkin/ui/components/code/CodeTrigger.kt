@@ -27,7 +27,7 @@ import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.checkin.model.CheckInParams
 import com.cookieshax.coursehelper.feature.checkin.model.CodeCheckInStrategy
-import com.cookieshax.coursehelper.feature.checkin.ui.CheckInState
+import com.cookieshax.coursehelper.feature.checkin.model.CheckInState
 import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
