@@ -476,8 +476,30 @@ object ApiManager {
             return ApiResult.Error("人脸图片地址为空")
         }
 
-        return when (val imgResp =
-            downloadImage(faceUrl.replace("http://", "https://"), asUser = uid)) {
+        val originalFile = File(
+            CourseHelperApplication.context.cacheDir,
+            "${uid}_original.jpg"
+        )
+
+        val imgResp = if (originalFile.exists()) {
+            try {
+                ApiResult.Success(originalFile.readBytes())
+            } catch (_: Exception) {
+                downloadImage(faceUrl.replace("http://", "https://"), asUser = uid)
+            }
+        } else {
+            val downloadResp = downloadImage(faceUrl.replace("http://", "https://"), asUser = uid)
+            if (downloadResp is ApiResult.Success) {
+                try {
+                    originalFile.writeBytes(downloadResp.data)
+                } catch (_: Exception) {
+                    // Ignore write exception
+                }
+            }
+            downloadResp
+        }
+
+        return when (imgResp) {
             is ApiResult.Success -> {
                 val file = File(
                     CourseHelperApplication.context.cacheDir,
