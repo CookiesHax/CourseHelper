@@ -71,59 +71,11 @@ import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import com.cookieshax.coursehelper.feature.course.model.CourseRepository
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.ui.items.Placeholder
+import kotlin.comparisons.compareBy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-
-sealed class CheckInType {
-    object Normal : CheckInType()
-    object QRCode : CheckInType()
-    object Gesture : CheckInType()
-    object Location : CheckInType()
-    object Code : CheckInType()
-    object Unknown : CheckInType()
-}
-
-@Keep
-data class CheckInState(
-    // 通用状态
-    var otherId: String = "",
-    var ifNeedVCode: Int = 0,
-    var openCheckFaceFlag: Int = 0,
-    var starttime: Long = 0L,
-    var endTime: Long = 0L,
-    var signInId: Long = 0L, // 存疑
-    var signOutId: Long = 0L, // 存疑
-    var signOutPublishTimeStamp: Long = 0L,
-
-    // 位置签到
-    var locationLatitude: Double = .0,
-    var locationLongitude: Double = .0,
-    var locationRange: Double = .0,
-    var locationText: String = "",
-
-    // 拍照签到
-    var ifphoto: Int = 0,
-
-    // 二维码签到
-    var ifopenAddress: Int = 0,
-    var ifrefreshewm: Int = 0,
-
-    // 签到码签到
-    var numberCount: Int = 0
-)
-
-private fun mapToCheckInType(id: String?): CheckInType {
-    return when (id) {
-        "0" -> CheckInType.Normal
-        "2" -> CheckInType.QRCode
-        "3" -> CheckInType.Gesture
-        "4" -> CheckInType.Location
-        "5" -> CheckInType.Code
-        else -> CheckInType.Unknown
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -363,6 +315,23 @@ fun CheckInScreen(
                     }
                 } else {
                     val accounts by AccountRepository.accountList.collectAsState()
+                    val checkedInUids by checkInViewModel.checkedInUids.collectAsState()
+                    val classAccountIds by checkInViewModel.classAccountIds.collectAsState()
+
+                    val sortedAccounts = remember(accounts, checkedInUids, classAccountIds) {
+                        accounts.sortedWith(compareBy({ account ->
+                            val isInClass =
+                                classAccountIds.isEmpty() || account.uid in classAccountIds
+                            val isCheckedIn = account.uid in checkedInUids
+                            when {
+                                isInClass && !isCheckedIn -> 0
+                                isInClass && isCheckedIn -> 1
+                                !isInClass && !isCheckedIn -> 2
+                                else -> 3
+                            }
+                        }, { it.name }))
+                    }
+
                     val tagsWithAccounts by AccountRepository.allTagsWithAccountsFlow.collectAsState()
                     val type = checkInType.value
                     val state = checkInState.value
@@ -375,7 +344,7 @@ fun CheckInScreen(
                         val limit by semaphoreLimit.collectAsState()
                         CheckInLayout(
                             viewModel = checkInViewModel,
-                            accounts = accounts,
+                            accounts = sortedAccounts,
                             tagsWithAccounts = tagsWithAccounts,
                             isNeedPhoto = state.ifphoto == 1,
                             showSplitLayout = type == CheckInType.Gesture,
