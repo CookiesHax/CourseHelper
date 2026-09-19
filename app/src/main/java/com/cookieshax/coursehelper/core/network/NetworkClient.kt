@@ -160,7 +160,7 @@ object NetworkClient {
 
     suspend fun post(
         url: String,
-        bodyMap: Map<String, Any>,
+        bodyMap: Map<String, Any>? = null,
         params: Map<String, Any?>? = null,
         headers: Map<String, String>? = null,
         asUser: String? = AccountRepository.activeAccountIdFlow.value
@@ -169,7 +169,7 @@ object NetworkClient {
 
         return performRequest(requestUrl, headers, asUser) { builder ->
             val formBodyBuilder = FormBody.Builder()
-            bodyMap.forEach { (key, value) ->
+            bodyMap?.forEach { (key, value) ->
                 formBodyBuilder.add(key, value.toString())
             }
             builder.post(formBodyBuilder.build())
