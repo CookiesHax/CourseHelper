@@ -83,8 +83,8 @@ fun CourseSection(
                         onCheckedChange = onToggleCheckInSelectAllOnScan
                     )
                     BooleanSettingItem(
-                        title = "排除已签到的账户",
-                        subtitle = "进入签到时自动取消勾选已经签到成功的账户",
+                        title = "排除已签到的账号",
+                        subtitle = "进入签到时自动取消勾选已经签到成功的账号",
                         checked = excludeCheckedInAccounts,
                         onCheckedChange = onToggleExcludeCheckedInAccounts
                     )

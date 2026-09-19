@@ -104,7 +104,7 @@ object CookieManager {
                 // 即使 userId 是 null
                 userTag.userId
             } else {
-                // 只有完全没传 Tag 的普通请求才使用当前活跃账户
+                // 只有完全没传 Tag 的普通请求才使用当前活跃账号
                 AccountRepository.activeAccountIdFlow.value
             }
 
@@ -269,7 +269,7 @@ object CookieManager {
         }
     }
 
-    // 将上下文Cookie转移到指定用户账户下
+    // 将上下文Cookie转移到指定用户账号下
     suspend fun transferLoginCookiesToUser(userId: String, context: Context) {
         // 获取上下文CookieJar中的Cookie
         val contextCookies = contextCookieJar.loadForRequest("https://chaoxing.com".toHttpUrl())

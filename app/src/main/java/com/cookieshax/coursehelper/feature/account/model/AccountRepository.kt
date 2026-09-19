@@ -129,7 +129,7 @@ object AccountRepository {
         val hasExpired = AtomicBoolean(false)
         coroutineScope {
             currentAccountList.forEach { account ->
-                // 为每个账户开启一个独立的协程并行去抓取数据
+                // 为每个账号开启一个独立的协程并行去抓取数据
                 launch {
                     val result = refreshAccount(account.uid)
                     if (result is ApiResult.Error) {
@@ -147,7 +147,7 @@ object AccountRepository {
         }
     }
 
-    // 添加或更新账户
+    // 添加或更新账号
     suspend fun addOrUpdateAccount(account: Account) {
         val existingAccount = accountDao.getAccountById(account.uid)
         val accountToSave = if (existingAccount != null) {
@@ -160,25 +160,25 @@ object AccountRepository {
 
         accountDao.insertOrUpdateAccount(accountToSave)
 
-        // 如果没有当前会话 自动设为当前账户
+        // 如果没有当前会话 自动设为当前账号
         if (activeAccountIdFlow.value == null) {
             switchActiveAccount(account.uid)
         }
     }
 
-    // 删除账户
+    // 删除账号
     suspend fun removeAccount(userId: String) {
         accountDao.deleteAccountById(userId)
         CookieManager.clearCookiesForUser(userId)
 
-        // 如果删除的是当前账户
+        // 如果删除的是当前账号
         if (activeAccountIdFlow.value == userId) {
             val currentList = accountDao.getAllAccounts()
             if (currentList.isNotEmpty()) {
-                // 切换到列表中的第一个账户
+                // 切换到列表中的第一个账号
                 switchActiveAccount(currentList.first().uid)
             } else {
-                // 没有账户了 清除当前活动账户ID
+                // 没有账号了 清除当前活动账号ID
                 switchActiveAccount(null)
             }
         }
@@ -195,7 +195,7 @@ object AccountRepository {
         }
     }
 
-    // 重新排序账户
+    // 重新排序账号
     suspend fun reorderAccounts(newList: List<Account>) {
         val updatedList = newList.mapIndexed { index, account ->
             account.copy(order = index)

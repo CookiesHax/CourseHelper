@@ -466,7 +466,7 @@ fun CheckInScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("点击账号以打开相机进行拍照")
                     Text("或点击图标来通过相册选取器上传图片")
-                    Text("上传成功之后 对应账户的图标会变为绿色")
+                    Text("上传成功之后 对应账号的图标会变为绿色")
                 }
             }
         )

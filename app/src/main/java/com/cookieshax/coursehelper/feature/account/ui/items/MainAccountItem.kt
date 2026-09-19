@@ -110,13 +110,13 @@ fun MainAccountItem(
             if (isActiveAccount && account.status == AccountStatus.VALID) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "活动账户",
+                    contentDescription = "活动账号",
                     tint = MaterialTheme.colorScheme.primary
                 )
             } else if (account.status == AccountStatus.EXPIRED) {
                 Icon(
                     imageVector = Icons.Default.Error,
-                    contentDescription = "失效账户",
+                    contentDescription = "失效账号",
                     tint = MaterialTheme.colorScheme.error
                 )
             }
