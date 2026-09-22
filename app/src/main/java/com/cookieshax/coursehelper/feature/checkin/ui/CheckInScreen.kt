@@ -73,7 +73,6 @@ import com.cookieshax.coursehelper.feature.checkin.viewmodel.CheckInViewModel
 import com.cookieshax.coursehelper.feature.course.model.CourseRepository
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.ui.items.Placeholder
-import kotlin.comparisons.compareBy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -97,7 +96,7 @@ fun CheckInScreen(
 
     val checkInViewModel: CheckInViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
-    val semaphoreLimit = settingsViewModel.checkInSemaphoreLimit
+    val settingsUiState by settingsViewModel.uiState.collectAsState()
 
     // 获取签到任务信息
     LaunchedEffect(taskId) {
@@ -170,13 +169,13 @@ fun CheckInScreen(
             }
         }
 
-        val mode = settingsViewModel.checkInAccountSelectionMode.value
-        val selectAllOnScan = settingsViewModel.checkInSelectAllOnScan.value
+        val mode = settingsUiState.checkInAccountSelectionMode
+        val selectAllOnScan = settingsUiState.checkInSelectAllOnScan
         val allAccounts = AccountRepository.getCurrentListSnapshot()
 
         // 智能选择预加载课程数据
         if (courseId != null && mode == 1) {
-            val showUnnecessary = settingsViewModel.showUnnecessaryCourses.value
+            val showUnnecessary = settingsUiState.showUnnecessaryCourses
             val missingAccounts =
                 allAccounts.filter { CourseRepository.getCachedCourses(it.uid) == null }
             if (missingAccounts.isNotEmpty()) {
@@ -211,7 +210,7 @@ fun CheckInScreen(
         }
 
         // 检查已签到状态并过滤
-        val currentExcludeSetting = settingsViewModel.excludeCheckedInAccounts.value
+        val currentExcludeSetting = settingsUiState.excludeCheckedInAccounts
         coroutineScope {
             allAccounts.map { account ->
                 launch {
@@ -345,7 +344,7 @@ fun CheckInScreen(
                     if (type == null || type == CheckInType.Unknown) {
                         Placeholder("发生错误", "未知的签到类型 请重新尝试")
                     } else {
-                        val limit by semaphoreLimit.collectAsState()
+                        val limit = settingsUiState.checkInSemaphoreLimit
                         CheckInLayout(
                             viewModel = checkInViewModel,
                             accounts = sortedAccounts,

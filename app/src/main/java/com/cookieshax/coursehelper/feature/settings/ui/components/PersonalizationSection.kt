@@ -9,16 +9,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 import com.cookieshax.coursehelper.feature.settings.ui.items.BooleanSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsUiState
 
 @Composable
 fun PersonalizationSection(
-    isDynamicColorEnabled: Boolean,
-    appTheme: String,
-    themeColor: String,
+    uiState: SettingsUiState,
     onToggleDynamicColor: (Boolean) -> Unit,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
@@ -40,23 +39,23 @@ fun PersonalizationSection(
             BooleanSettingItem(
                 title = "莫奈取色",
                 subtitle = "根据壁纸颜色自动调整应用主题色 (Android 12+)",
-                checked = isDynamicColorEnabled,
+                checked = uiState.isDynamicColorEnabled,
                 onCheckedChange = onToggleDynamicColor
             )
             SelectionSettingItem(
                 title = "应用主题",
-                currentValue = when (appTheme) {
+                currentValue = when (uiState.appTheme) {
                     "system" -> "跟随系统"
                     "light" -> "浅色"
                     "dark" -> "深色"
-                    else -> appTheme
+                    else -> uiState.appTheme
                 },
                 onClick = { onOpenDialog(SettingsDialogOpen.APP_THEME) }
             )
-            AnimatedVisibility(visible = !isDynamicColorEnabled) {
+            AnimatedVisibility(visible = !uiState.isDynamicColorEnabled) {
                 SelectionSettingItem(
                     title = "主题色",
-                    currentValue = themeColor,
+                    currentValue = uiState.themeColor,
                     onClick = { onOpenDialog(SettingsDialogOpen.THEME_COLOR) }
                 )
             }

@@ -10,17 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.location.LocationMethod
 import com.cookieshax.coursehelper.feature.settings.ui.items.ClickableSettingItem
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsUiState
 
 @Composable
 fun AppSection(
-    deviceId: String,
-    userAgent: String,
-    packageName: String,
-    loginEndpoint: String,
-    locationMethod: String,
+    uiState: SettingsUiState,
     onOpenDialog: (SettingsDialogOpen) -> Unit
 ) {
     Card(
@@ -40,27 +37,31 @@ fun AppSection(
             SettingSectionHeader(title = "应用")
             ClickableSettingItem(
                 title = "伪装包名",
-                subtitle = packageName,
+                subtitle = uiState.packageName,
                 onClick = { onOpenDialog(SettingsDialogOpen.PACKAGE_NAME) }
             )
             ClickableSettingItem(
                 title = "设备标识 ID",
-                subtitle = deviceId.ifEmpty { "正在获取..." },
+                subtitle = uiState.deviceId.ifEmpty { "正在获取..." },
                 onClick = { onOpenDialog(SettingsDialogOpen.DEVICE_ID) }
             )
             ClickableSettingItem(
                 title = "User-Agent",
-                subtitle = userAgent.ifEmpty { "无" },
+                subtitle = uiState.userAgent.ifEmpty { "无" },
                 onClick = { onOpenDialog(SettingsDialogOpen.USER_AGENT) }
             )
             SelectionSettingItem(
                 title = "密码登录端点",
-                currentValue = if (loginEndpoint == "web") "Web 端" else "App 端",
+                currentValue = if (uiState.loginEndpoint == "web") "Web 端" else "App 端",
                 onClick = { onOpenDialog(SettingsDialogOpen.LOGIN_ENDPOINT) }
             )
             SelectionSettingItem(
                 title = "定位方式",
-                currentValue = LocationMethod.valueOf(locationMethod).description,
+                currentValue = try {
+                    LocationMethod.valueOf(uiState.locationMethod).description
+                } catch (_: Exception) {
+                    uiState.locationMethod
+                },
                 onClick = { onOpenDialog(SettingsDialogOpen.LOCATION_METHOD) }
             )
         }

@@ -27,23 +27,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.cookieshax.coursehelper.feature.settings.ui.components.AboutSection
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
-import com.cookieshax.coursehelper.feature.settings.ui.components.StorageSection
-import com.cookieshax.coursehelper.feature.settings.ui.components.CourseSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.AppSection
+import com.cookieshax.coursehelper.feature.settings.ui.components.CourseSection
 import com.cookieshax.coursehelper.feature.settings.ui.components.PersonalizationSection
+import com.cookieshax.coursehelper.feature.settings.ui.components.StorageSection
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.AppThemeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CacheExpirationDaysDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.CheckInAccountSelectionModeDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.DeviceIdDialog
-import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LocationMethodDialog
+import com.cookieshax.coursehelper.feature.settings.ui.dialogs.LoginEndpointDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.PackageNameDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.SliderEditDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.StepSliderEditDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.ThemeColorDialog
 import com.cookieshax.coursehelper.feature.settings.ui.dialogs.UserAgentDialog
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,41 +53,19 @@ fun SettingsScreen(
 ) {
     val isNavigating = remember { mutableStateOf(false) }
     val viewModel: SettingsViewModel = viewModel()
-    val isReady by viewModel.isReady.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val activeDialog by viewModel.activeDialog.collectAsState()
-    val isDynamicColorEnabled by viewModel.isDynamicColorEnabled.collectAsState()
-    val preferOkHttpOverWebView by viewModel.preferOkHttpOverWebView.collectAsState()
-    val clearCacheOnStartup by viewModel.clearCacheOnStartup.collectAsState()
-    val cacheExpirationDays by viewModel.cacheExpirationDays.collectAsState()
-    val loginEndpoint by viewModel.loginEndpoint.collectAsState()
-    val checkInSemaphoreLimit by viewModel.checkInSemaphoreLimit.collectAsState()
-    val checkInAccountSelectionMode by viewModel.checkInAccountSelectionMode.collectAsState()
-    val checkInSelectAllOnScan by viewModel.checkInSelectAllOnScan.collectAsState()
-    val isOpencvEnabledForCaptcha by viewModel.isOpencvEnabledForCaptcha.collectAsState()
-    val maxCaptchaRetries by viewModel.maxCaptchaRetries.collectAsState()
-    val cacheSize by viewModel.cacheSize.collectAsState()
-    val appTheme by viewModel.appTheme.collectAsState()
-    val themeColor by viewModel.themeColor.collectAsState()
-    val showUnsupportedTasks by viewModel.showUnsupportedTasks.collectAsState()
-    val showUnnecessaryCourses by viewModel.showUnnecessaryCourses.collectAsState()
-    val cacheAllAccountsOnStartup by viewModel.cacheAllAccountsOnStartup.collectAsState()
-    val excludeCheckedInAccounts by viewModel.excludeCheckedInAccounts.collectAsState()
-    val maxImageCacheSize by viewModel.maxImageCacheSize.collectAsState()
-    val userAgent by viewModel.userAgent.collectAsState()
-    val packageName by viewModel.packageName.collectAsState()
-    val deviceId by viewModel.deviceId.collectAsState()
-    val locationMethod by viewModel.locationMethod.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.refreshCacheSize()
     }
 
-    if (!isReady) return
+    if (!uiState.isReady) return
 
     when (activeDialog) {
         SettingsDialogOpen.CACHE_EXPIRATION_DAYS -> {
             CacheExpirationDaysDialog(
-                currentDays = cacheExpirationDays,
+                currentDays = uiState.cacheExpirationDays,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setCacheExpirationDays(it)
@@ -98,7 +76,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.LOGIN_ENDPOINT -> {
             LoginEndpointDialog(
-                currentEndpoint = loginEndpoint,
+                currentEndpoint = uiState.loginEndpoint,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setLoginEndpoint(it)
@@ -109,7 +87,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.APP_THEME -> {
             AppThemeDialog(
-                currentTheme = appTheme,
+                currentTheme = uiState.appTheme,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setAppTheme(it)
@@ -120,7 +98,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.THEME_COLOR -> {
             ThemeColorDialog(
-                currentThemeColor = themeColor,
+                currentThemeColor = uiState.themeColor,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setThemeColor(it)
@@ -131,7 +109,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.USER_AGENT -> {
             UserAgentDialog(
-                currentUA = userAgent,
+                currentUA = uiState.userAgent,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setUserAgent(it)
@@ -142,7 +120,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.PACKAGE_NAME -> {
             PackageNameDialog(
-                currentPackageName = packageName,
+                currentPackageName = uiState.packageName,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setPackageName(it)
@@ -154,7 +132,7 @@ fun SettingsScreen(
         SettingsDialogOpen.CHECK_IN_SEMAPHORE -> {
             SliderEditDialog(
                 title = "签到并发数",
-                value = checkInSemaphoreLimit,
+                value = uiState.checkInSemaphoreLimit,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setCheckInSemaphoreLimit(it)
@@ -166,7 +144,7 @@ fun SettingsScreen(
         SettingsDialogOpen.MAX_CAPTCHA_RETRIES -> {
             SliderEditDialog(
                 title = "自动Captcha最大重试次数",
-                value = maxCaptchaRetries,
+                value = uiState.maxCaptchaRetries,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setMaxCaptchaRetries(it)
@@ -178,7 +156,7 @@ fun SettingsScreen(
         SettingsDialogOpen.MAX_IMAGE_CACHE_SIZE -> {
             StepSliderEditDialog(
                 title = "图片缓存上限",
-                value = maxImageCacheSize,
+                value = uiState.maxImageCacheSize,
                 steps = listOf(0, 8, 16, 32, 64, 128, 256, -1),
                 valueLabel = { valMb ->
                     when (valMb) {
@@ -197,7 +175,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.DEVICE_ID -> {
             DeviceIdDialog(
-                currentDeviceId = deviceId,
+                currentDeviceId = uiState.deviceId,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.updateDeviceId(it)
@@ -208,7 +186,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.LOCATION_METHOD -> {
             LocationMethodDialog(
-                currentMethod = locationMethod,
+                currentMethod = uiState.locationMethod,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setLocationMethod(it)
@@ -219,7 +197,7 @@ fun SettingsScreen(
 
         SettingsDialogOpen.CHECK_IN_ACCOUNT_SELECTION_MODE -> {
             CheckInAccountSelectionModeDialog(
-                currentMode = checkInAccountSelectionMode,
+                currentMode = uiState.checkInAccountSelectionMode,
                 onDismissRequest = { viewModel.setActiveDialog(null) },
                 onConfirm = {
                     viewModel.setCheckInAccountSelectionMode(it)
@@ -238,27 +216,14 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 个性化
             PersonalizationSection(
-                isDynamicColorEnabled = isDynamicColorEnabled,
-                appTheme = appTheme,
-                themeColor = themeColor,
+                uiState = uiState,
                 onToggleDynamicColor = { viewModel.toggleDynamicColor(it) },
                 onOpenDialog = { viewModel.setActiveDialog(it) }
             )
 
-            // 课程
             CourseSection(
-                preferOkHttpOverWebView = preferOkHttpOverWebView,
-                checkInAccountSelectionMode = checkInAccountSelectionMode,
-                checkInSelectAllOnScan = checkInSelectAllOnScan,
-                checkInSemaphoreLimit = checkInSemaphoreLimit,
-                isOpencvEnabledForCaptcha = isOpencvEnabledForCaptcha,
-                maxCaptchaRetries = maxCaptchaRetries,
-                showUnsupportedTasks = showUnsupportedTasks,
-                showUnnecessaryCourses = showUnnecessaryCourses,
-                cacheAllAccountsOnStartup = cacheAllAccountsOnStartup,
-                excludeCheckedInAccounts = excludeCheckedInAccounts,
+                uiState = uiState,
                 onTogglePreferOkHttp = { viewModel.togglePreferOkHttp(it) },
                 onToggleCheckInSelectAllOnScan = { viewModel.toggleCheckInSelectAllOnScan(it) },
                 onSetCheckInSemaphoreLimit = { viewModel.setCheckInSemaphoreLimit(it) },
@@ -271,29 +236,19 @@ fun SettingsScreen(
                 onOpenDialog = { viewModel.setActiveDialog(it) }
             )
 
-            // 网络
             AppSection(
-                deviceId = deviceId,
-                userAgent = userAgent,
-                packageName = packageName,
-                loginEndpoint = loginEndpoint,
-                locationMethod = locationMethod,
+                uiState = uiState,
                 onOpenDialog = { viewModel.setActiveDialog(it) }
             )
 
-            // 应用
             StorageSection(
-                clearCacheOnStartup = clearCacheOnStartup,
-                cacheExpirationDays = cacheExpirationDays,
-                cacheSize = cacheSize,
-                maxImageCacheSize = maxImageCacheSize,
+                uiState = uiState,
                 onOpenDialog = { viewModel.setActiveDialog(it) },
                 onToggleClearCacheOnStartup = { viewModel.toggleClearCacheOnStartup(it) },
                 onClearCache = { viewModel.clearCache() },
                 onSetMaxImageCacheSize = { viewModel.setMaxImageCacheSize(it) }
             )
 
-            // 关于
             AboutSection()
 
             Spacer(

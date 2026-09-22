@@ -10,19 +10,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cookieshax.coursehelper.core.utils.FileUtils.formatFileSize
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
 import com.cookieshax.coursehelper.feature.settings.ui.items.BooleanSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.ClickableSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingItem
-import com.cookieshax.coursehelper.feature.settings.ui.items.StepSliderSettingItem
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
+import com.cookieshax.coursehelper.feature.settings.ui.items.StepSliderSettingItem
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsUiState
 
 @Composable
 fun StorageSection(
-    clearCacheOnStartup: Boolean,
-    cacheExpirationDays: Int,
-    cacheSize: Long,
-    maxImageCacheSize: Int,
+    uiState: SettingsUiState,
     onOpenDialog: (SettingsDialogOpen) -> Unit,
     onToggleClearCacheOnStartup: (Boolean) -> Unit,
     onClearCache: () -> Unit,
@@ -46,20 +44,20 @@ fun StorageSection(
             BooleanSettingItem(
                 title = "启动时清理缓存",
                 subtitle = "每次启动应用时自动清理过期缓存",
-                checked = clearCacheOnStartup,
+                checked = uiState.clearCacheOnStartup,
                 onCheckedChange = onToggleClearCacheOnStartup
             )
-            AnimatedVisibility(visible = clearCacheOnStartup) {
+            AnimatedVisibility(visible = uiState.clearCacheOnStartup) {
                 SelectionSettingItem(
                     title = "缓存过期时间",
-                    currentValue = if (cacheExpirationDays > 0) "$cacheExpirationDays 天" else "立即",
+                    currentValue = if (uiState.cacheExpirationDays > 0) "${uiState.cacheExpirationDays} 天" else "立即",
                     onClick = { onOpenDialog(SettingsDialogOpen.CACHE_EXPIRATION_DAYS) }
                 )
             }
             val cacheSteps = listOf(0, 8, 16, 32, 64, 128, 256, -1)
             StepSliderSettingItem(
                 title = "图片缓存上限",
-                value = maxImageCacheSize,
+                value = uiState.maxImageCacheSize,
                 steps = cacheSteps,
                 valueLabel = { valMb ->
                     when (valMb) {
@@ -73,7 +71,7 @@ fun StorageSection(
             )
             ClickableSettingItem(
                 title = "立即清理缓存",
-                subtitle = "当前缓存: ${formatFileSize(cacheSize)}",
+                subtitle = "当前缓存: ${formatFileSize(uiState.cacheSize)}",
                 onClick = onClearCache
             )
         }

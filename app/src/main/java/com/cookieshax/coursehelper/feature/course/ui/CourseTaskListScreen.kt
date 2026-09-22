@@ -50,8 +50,8 @@ import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.network.ApiManager
 import com.cookieshax.coursehelper.core.network.ApiResult
 import com.cookieshax.coursehelper.core.utils.StringUtils
-import com.cookieshax.coursehelper.feature.course.ui.items.TaskItem
 import com.cookieshax.coursehelper.feature.course.model.CourseTask
+import com.cookieshax.coursehelper.feature.course.ui.items.TaskItem
 import com.cookieshax.coursehelper.feature.course.viewmodel.CourseTaskViewModel
 import com.cookieshax.coursehelper.feature.course.viewmodel.TaskState
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
@@ -72,8 +72,9 @@ fun CourseTaskListScreen(
     val scope = rememberCoroutineScope()
 
     val settingsViewModel: SettingsViewModel = viewModel()
-    val preferOkHttpOverWebView by settingsViewModel.preferOkHttpOverWebView.collectAsStateWithLifecycle()
-    val showUnsupportedTasks = settingsViewModel.showUnsupportedTasks.collectAsState().value
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val preferOkHttpOverWebView = settingsUiState.preferOkHttpOverWebView
+    val showUnsupportedTasks = settingsUiState.showUnsupportedTasks
 
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isMockLocationFlow by LocationService.isMockLocationFlow.collectAsState() // 模拟定位状态

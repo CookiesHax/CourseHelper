@@ -24,10 +24,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val viewModel: SettingsViewModel = viewModel()
-            val isDynamicColor by viewModel.isDynamicColorEnabled.collectAsState()
-            val appTheme by viewModel.appTheme.collectAsState()
+            val uiState by viewModel.uiState.collectAsState()
 
-            val darkTheme = when (appTheme) {
+            val darkTheme = when (uiState.appTheme) {
                 "light" -> false
                 "dark" -> true
                 else -> isSystemInDarkTheme()
@@ -35,8 +34,8 @@ class MainActivity : ComponentActivity() {
 
             CourseHelperTheme(
                 darkTheme = darkTheme,
-                dynamicColor = isDynamicColor,
-                themeColor = viewModel.themeColor
+                dynamicColor = uiState.isDynamicColorEnabled,
+                themeColor = uiState.themeColor
             ) {
                 AppNavigation()
             }

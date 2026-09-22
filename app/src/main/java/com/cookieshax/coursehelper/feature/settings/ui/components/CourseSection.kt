@@ -14,19 +14,11 @@ import com.cookieshax.coursehelper.feature.settings.ui.items.SelectionSettingIte
 import com.cookieshax.coursehelper.feature.settings.ui.items.SettingSectionHeader
 import com.cookieshax.coursehelper.feature.settings.ui.items.SliderSettingItem
 import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsDialogOpen
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsUiState
 
 @Composable
 fun CourseSection(
-    preferOkHttpOverWebView: Boolean,
-    checkInAccountSelectionMode: Int,
-    checkInSelectAllOnScan: Boolean,
-    checkInSemaphoreLimit: Int,
-    isOpencvEnabledForCaptcha: Boolean,
-    maxCaptchaRetries: Int,
-    showUnsupportedTasks: Boolean,
-    showUnnecessaryCourses: Boolean,
-    cacheAllAccountsOnStartup: Boolean,
-    excludeCheckedInAccounts: Boolean,
+    uiState: SettingsUiState,
     onTogglePreferOkHttp: (Boolean) -> Unit,
     onToggleCheckInSelectAllOnScan: (Boolean) -> Unit,
     onSetCheckInSemaphoreLimit: (Int) -> Unit,
@@ -56,20 +48,20 @@ fun CourseSection(
             BooleanSettingItem(
                 title = "启动时缓存所有账号的课程",
                 subtitle = "启用后将在应用启动时缓存所有账号的课程信息，否则仅缓存当前活动的账号",
-                checked = cacheAllAccountsOnStartup,
+                checked = uiState.cacheAllAccountsOnStartup,
                 onCheckedChange = onToggleCacheAllAccountsOnStartup
             )
             BooleanSettingItem(
                 title = "优先使用OkHttp签到",
                 subtitle = "启用后将优先使用OkHttp进行签到，而非WebView",
-                checked = preferOkHttpOverWebView,
+                checked = uiState.preferOkHttpOverWebView,
                 onCheckedChange = onTogglePreferOkHttp
             )
-            AnimatedVisibility(visible = preferOkHttpOverWebView) {
+            AnimatedVisibility(visible = uiState.preferOkHttpOverWebView) {
                 Column {
                     SelectionSettingItem(
                         title = "签到界面账号选择模式",
-                        currentValue = when (checkInAccountSelectionMode) {
+                        currentValue = when (uiState.checkInAccountSelectionMode) {
                             0 -> "全不选"
                             1 -> "选择加入此课程的账号"
                             else -> "全选"
@@ -79,18 +71,18 @@ fun CourseSection(
                     BooleanSettingItem(
                         title = "扫码进入签到时全选账号",
                         subtitle = "启用后扫码进入签到将默认全选账号。这会导致尝试对所有账号签到，即使非本班学生",
-                        checked = checkInSelectAllOnScan,
+                        checked = uiState.checkInSelectAllOnScan,
                         onCheckedChange = onToggleCheckInSelectAllOnScan
                     )
                     BooleanSettingItem(
                         title = "排除已签到的账号",
                         subtitle = "进入签到时自动取消勾选已经签到成功的账号",
-                        checked = excludeCheckedInAccounts,
+                        checked = uiState.excludeCheckedInAccounts,
                         onCheckedChange = onToggleExcludeCheckedInAccounts
                     )
                     SliderSettingItem(
                         title = "签到并发数",
-                        value = checkInSemaphoreLimit,
+                        value = uiState.checkInSemaphoreLimit,
                         range = 1 .. 12,
                         onValueChange = onSetCheckInSemaphoreLimit,
                         onClick = { onOpenDialog(SettingsDialogOpen.CHECK_IN_SEMAPHORE) }
@@ -98,13 +90,13 @@ fun CourseSection(
                     BooleanSettingItem(
                         title = "使用OpenCV进行Captcha识别",
                         subtitle = "启用后将使用OpenCV进行Captcha识别，否则需要手动完成验证码",
-                        checked = isOpencvEnabledForCaptcha,
+                        checked = uiState.isOpencvEnabledForCaptcha,
                         onCheckedChange = onToggleOpencvForCaptcha
                     )
-                    AnimatedVisibility(visible = isOpencvEnabledForCaptcha) {
+                    AnimatedVisibility(visible = uiState.isOpencvEnabledForCaptcha) {
                         SliderSettingItem(
                             title = "自动Captcha最大重试次数",
-                            value = maxCaptchaRetries,
+                            value = uiState.maxCaptchaRetries,
                             range = 0 .. 5,
                             onValueChange = onSetMaxCaptchaRetries,
                             onClick = { onOpenDialog(SettingsDialogOpen.MAX_CAPTCHA_RETRIES) }
@@ -115,13 +107,13 @@ fun CourseSection(
             BooleanSettingItem(
                 title = "展示不受支持的任务活动",
                 subtitle = "启用后将展示不受支持的任务活动",
-                checked = showUnsupportedTasks,
+                checked = uiState.showUnsupportedTasks,
                 onCheckedChange = onToggleShowUnsupportedTasks
             )
             BooleanSettingItem(
                 title = "显示不必要的课程",
                 subtitle = "启用后将显示未开始和已结束的课程，否则将隐藏",
-                checked = showUnnecessaryCourses,
+                checked = uiState.showUnnecessaryCourses,
                 onCheckedChange = onToggleShowUnnecessaryCourses
             )
         }

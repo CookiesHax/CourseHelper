@@ -44,11 +44,11 @@ import androidx.navigation.NavController
 import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.location.LocationService
 import com.cookieshax.coursehelper.core.permission.PermissionManager
-import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.cookieshax.coursehelper.core.utils.FileUtils
 import com.cookieshax.coursehelper.core.utils.showToast
 import com.cookieshax.coursehelper.feature.account.model.AccountRepository
 import com.cookieshax.coursehelper.feature.camera.EXTRA_IMAGE_URI
+import com.cookieshax.coursehelper.feature.settings.viewmodel.SettingsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -67,7 +67,8 @@ fun WebViewScreen(
 
     val viewModel = viewModel<WebViewViewModel>()
     val settingsViewModel = viewModel<SettingsViewModel>()
-    val appTheme by settingsViewModel.appTheme.collectAsState()
+    val settingsUiState by settingsViewModel.uiState.collectAsState()
+    val appTheme = settingsUiState.appTheme
     val systemDark = isSystemInDarkTheme()
     val isDarkTheme = remember(appTheme, systemDark) {
         when (appTheme) {

@@ -3,17 +3,19 @@ package com.cookieshax.coursehelper.feature.settings.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import com.cookieshax.coursehelper.core.utils.FileUtils
-import com.cookieshax.coursehelper.core.repository.SettingsRepository
 import com.cookieshax.coursehelper.core.imageloader.CoilConfig
 import com.cookieshax.coursehelper.core.info.ChaoXingAppInfo
 import com.cookieshax.coursehelper.core.network.NetworkClient
-import com.cookieshax.coursehelper.core.location.LocationMethod
-import kotlinx.coroutines.flow.first
+import com.cookieshax.coursehelper.core.repository.SettingsRepository
+import com.cookieshax.coursehelper.core.utils.FileUtils
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class SettingsDialogOpen {
     CACHE_EXPIRATION_DAYS,
@@ -38,251 +40,123 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val activeDialog: StateFlow<SettingsDialogOpen?> = _activeDialog.asStateFlow()
 
     private val _cacheSize = MutableStateFlow(FileUtils.getCacheSize(app))
-    val cacheSize: StateFlow<Long> = _cacheSize.asStateFlow()
-
-    private val _isReady = MutableStateFlow(false)
-    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
-
-    private val _isDynamicColorEnabled = MutableStateFlow(true)
-    val isDynamicColorEnabled: StateFlow<Boolean> = _isDynamicColorEnabled.asStateFlow()
-
-    private val _preferOkHttpOverWebView = MutableStateFlow(true)
-    val preferOkHttpOverWebView: StateFlow<Boolean> = _preferOkHttpOverWebView.asStateFlow()
-
-    private val _clearCacheOnStartup = MutableStateFlow(false)
-    val clearCacheOnStartup: StateFlow<Boolean> = _clearCacheOnStartup.asStateFlow()
-
-    private val _cacheExpirationDays = MutableStateFlow(7)
-    val cacheExpirationDays: StateFlow<Int> = _cacheExpirationDays.asStateFlow()
-
-    private val _loginEndpoint = MutableStateFlow("app")
-    val loginEndpoint: StateFlow<String> = _loginEndpoint.asStateFlow()
-
-    private val _checkInSemaphoreLimit = MutableStateFlow(6)
-    val checkInSemaphoreLimit: StateFlow<Int> = _checkInSemaphoreLimit.asStateFlow()
-
-    private val _isOpencvEnabledForCaptcha = MutableStateFlow(true)
-    val isOpencvEnabledForCaptcha: StateFlow<Boolean> = _isOpencvEnabledForCaptcha.asStateFlow()
-
-    private val _maxCaptchaRetries = MutableStateFlow(3)
-    val maxCaptchaRetries: StateFlow<Int> = _maxCaptchaRetries.asStateFlow()
-
-    private val _checkInAccountSelectionMode = MutableStateFlow(0)
-    val checkInAccountSelectionMode: StateFlow<Int> = _checkInAccountSelectionMode.asStateFlow()
-
-    private val _checkInSelectAllOnScan = MutableStateFlow(false)
-    val checkInSelectAllOnScan: StateFlow<Boolean> = _checkInSelectAllOnScan.asStateFlow()
-
-    private val _appTheme = MutableStateFlow("system")
-    val appTheme: StateFlow<String> = _appTheme.asStateFlow()
-
-    private val _themeColor = MutableStateFlow("#769CDF")
-    val themeColor: StateFlow<String> = _themeColor.asStateFlow()
-
-    private val _showUnsupportedTasks = MutableStateFlow(false)
-    val showUnsupportedTasks: StateFlow<Boolean> = _showUnsupportedTasks.asStateFlow()
-
-    private val _showUnnecessaryCourses = MutableStateFlow(false)
-    val showUnnecessaryCourses: StateFlow<Boolean> = _showUnnecessaryCourses.asStateFlow()
-
-    private val _maxImageCacheSize = MutableStateFlow(64)
-    val maxImageCacheSize: StateFlow<Int> = _maxImageCacheSize.asStateFlow()
-
-    private val _userAgent = MutableStateFlow("")
-    val userAgent: StateFlow<String> = _userAgent.asStateFlow()
-
-    private val _packageName = MutableStateFlow("com.chaoxing.mobile")
-    val packageName: StateFlow<String> = _packageName.asStateFlow()
-
     private val _deviceId = MutableStateFlow("")
-    val deviceId: StateFlow<String> = _deviceId.asStateFlow()
 
-    private val _locationMethod = MutableStateFlow(LocationMethod.BAIDU.name)
-    val locationMethod: StateFlow<String> = _locationMethod.asStateFlow()
-
-    private val _cacheAllAccountsOnStartup = MutableStateFlow(false)
-    val cacheAllAccountsOnStartup: StateFlow<Boolean> = _cacheAllAccountsOnStartup.asStateFlow()
-
-    private val _excludeCheckedInAccounts = MutableStateFlow(false)
-    val excludeCheckedInAccounts: StateFlow<Boolean> = _excludeCheckedInAccounts.asStateFlow()
+    val uiState: StateFlow<SettingsUiState> = combine<Any?, SettingsUiState>(
+        listOf(
+            repository.isDynamicColorEnabled,
+            repository.preferOkHttpOverWebView,
+            repository.clearCacheOnStartup,
+            repository.cacheExpirationDays,
+            repository.loginEndpoint,
+            repository.checkInSemaphoreLimit,
+            repository.checkInAccountSelectionMode,
+            repository.checkInSelectAllOnScan,
+            repository.isOpencvEnabledForCaptcha,
+            repository.maxCaptchaRetries,
+            repository.appTheme,
+            repository.themeColor,
+            repository.showUnsupportedTasks,
+            repository.showUnnecessaryCourses,
+            repository.cacheAllAccountsOnStartup,
+            repository.excludeCheckedInAccounts,
+            repository.maxImageCacheSize,
+            repository.userAgent.onEach { NetworkClient.clearUserAgentCache() },
+            repository.packageName.onEach { ChaoXingAppInfo.packageName = it },
+            repository.locationMethod,
+            _cacheSize,
+            _deviceId
+        )
+    ) { args ->
+        SettingsUiState(
+            isReady = true,
+            isDynamicColorEnabled = args[0] as Boolean,
+            preferOkHttpOverWebView = args[1] as Boolean,
+            clearCacheOnStartup = args[2] as Boolean,
+            cacheExpirationDays = args[3] as Int,
+            loginEndpoint = args[4] as String,
+            checkInSemaphoreLimit = args[5] as Int,
+            checkInAccountSelectionMode = args[6] as Int,
+            checkInSelectAllOnScan = args[7] as Boolean,
+            isOpencvEnabledForCaptcha = args[8] as Boolean,
+            maxCaptchaRetries = args[9] as Int,
+            appTheme = args[10] as String,
+            themeColor = args[11] as String,
+            showUnsupportedTasks = args[12] as Boolean,
+            showUnnecessaryCourses = args[13] as Boolean,
+            cacheAllAccountsOnStartup = args[14] as Boolean,
+            excludeCheckedInAccounts = args[15] as Boolean,
+            maxImageCacheSize = args[16] as Int,
+            userAgent = args[17] as String,
+            packageName = args[18] as String,
+            locationMethod = args[19] as String,
+            cacheSize = args[20] as Long,
+            deviceId = args[21] as String
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = SettingsUiState(isReady = false)
+    )
 
     init {
         viewModelScope.launch {
-            // Initial sync fetch of all values
-            _isDynamicColorEnabled.value = repository.isDynamicColorEnabled.first()
-            _preferOkHttpOverWebView.value = repository.preferOkHttpOverWebView.first()
-            _clearCacheOnStartup.value = repository.clearCacheOnStartup.first()
-            _cacheExpirationDays.value = repository.cacheExpirationDays.first()
-            _loginEndpoint.value = repository.loginEndpoint.first()
-            _checkInSemaphoreLimit.value = repository.checkInSemaphoreLimit.first()
-            _checkInAccountSelectionMode.value = repository.checkInAccountSelectionMode.first()
-            _checkInSelectAllOnScan.value = repository.checkInSelectAllOnScan.first()
-            _appTheme.value = repository.appTheme.first()
-            _themeColor.value = repository.themeColor.first()
-            _showUnsupportedTasks.value = repository.showUnsupportedTasks.first()
-            _showUnnecessaryCourses.value = repository.showUnnecessaryCourses.first()
-            _maxImageCacheSize.value = repository.maxImageCacheSize.first()
-            _userAgent.value = repository.userAgent.first()
-            _packageName.value = repository.packageName.first()
-            _locationMethod.value = repository.locationMethod.first()
-            _cacheAllAccountsOnStartup.value = repository.cacheAllAccountsOnStartup.first()
-            _excludeCheckedInAccounts.value = repository.excludeCheckedInAccounts.first()
             _deviceId.value = NetworkClient.getDeviceId()
-
-            _isReady.value = true
-
-            // Start collecting for real-time updates
-            launch {
-                repository.isDynamicColorEnabled.collect {
-                    _isDynamicColorEnabled.value = it
-                }
-            }
-            launch {
-                repository.preferOkHttpOverWebView.collect {
-                    _preferOkHttpOverWebView.value = it
-                }
-            }
-            launch { repository.clearCacheOnStartup.collect { _clearCacheOnStartup.value = it } }
-            launch { repository.cacheExpirationDays.collect { _cacheExpirationDays.value = it } }
-            launch { repository.loginEndpoint.collect { _loginEndpoint.value = it } }
-            launch {
-                repository.checkInSemaphoreLimit.collect {
-                    _checkInSemaphoreLimit.value = it
-                }
-            }
-            launch {
-                repository.isOpencvEnabledForCaptcha.collect {
-                    _isOpencvEnabledForCaptcha.value = it
-                }
-            }
-            launch { repository.maxCaptchaRetries.collect { _maxCaptchaRetries.value = it } }
-            launch {
-                repository.checkInAccountSelectionMode.collect {
-                    _checkInAccountSelectionMode.value = it
-                }
-            }
-            launch {
-                repository.checkInSelectAllOnScan.collect {
-                    _checkInSelectAllOnScan.value = it
-                }
-            }
-            launch { repository.appTheme.collect { _appTheme.value = it } }
-            launch { repository.themeColor.collect { _themeColor.value = it } }
-            launch { repository.showUnsupportedTasks.collect { _showUnsupportedTasks.value = it } }
-            launch {
-                repository.showUnnecessaryCourses.collect {
-                    _showUnnecessaryCourses.value = it
-                }
-            }
-            launch { repository.maxImageCacheSize.collect { _maxImageCacheSize.value = it } }
-            launch {
-                repository.userAgent.collect {
-                    _userAgent.value = it
-                    NetworkClient.clearUserAgentCache()
-                }
-            }
-            launch {
-                repository.packageName.collect {
-                    _packageName.value = it
-                    ChaoXingAppInfo.packageName = it
-                }
-            }
-            launch {
-                repository.locationMethod.collect {
-                    _locationMethod.value = it
-                }
-            }
-            launch {
-                repository.cacheAllAccountsOnStartup.collect {
-                    _cacheAllAccountsOnStartup.value = it
-                }
-            }
-            launch {
-                repository.excludeCheckedInAccounts.collect {
-                    _excludeCheckedInAccounts.value = it
-                }
-            }
         }
     }
 
     fun toggleDynamicColor(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setDynamicColorEnabled(enabled)
-        }
+        viewModelScope.launch { repository.setDynamicColorEnabled(enabled) }
     }
 
     fun togglePreferOkHttp(prefer: Boolean) {
-        viewModelScope.launch {
-            repository.setPreferOkHttpOverWebView(prefer)
-        }
+        viewModelScope.launch { repository.setPreferOkHttpOverWebView(prefer) }
     }
 
     fun toggleClearCacheOnStartup(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setClearCacheOnStartup(enabled)
-        }
+        viewModelScope.launch { repository.setClearCacheOnStartup(enabled) }
     }
 
     fun setCacheExpirationDays(days: Int) {
-        viewModelScope.launch {
-            repository.setCacheExpirationDays(days)
-        }
+        viewModelScope.launch { repository.setCacheExpirationDays(days) }
     }
 
     fun setLoginEndpoint(endpoint: String) {
-        viewModelScope.launch {
-            repository.setLoginEndpoint(endpoint)
-        }
+        viewModelScope.launch { repository.setLoginEndpoint(endpoint) }
     }
 
     fun setCheckInSemaphoreLimit(limit: Int) {
-        val verifiedLomit = limit.coerceAtLeast(1)
-        viewModelScope.launch {
-            repository.setCheckInSemaphoreLimit(verifiedLomit)
-        }
+        val verifiedLimit = limit.coerceAtLeast(1)
+        viewModelScope.launch { repository.setCheckInSemaphoreLimit(verifiedLimit) }
     }
 
     fun toggleOpencvForCaptcha(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setOpencvEnabledForCaptcha(enabled)
-        }
+        viewModelScope.launch { repository.setOpencvEnabledForCaptcha(enabled) }
     }
 
     fun setMaxCaptchaRetries(retries: Int) {
         val verifiedRetries = retries.coerceAtLeast(0)
-        viewModelScope.launch {
-            repository.setMaxCaptchaRetries(verifiedRetries)
-        }
+        viewModelScope.launch { repository.setMaxCaptchaRetries(verifiedRetries) }
     }
 
     fun setCheckInAccountSelectionMode(mode: Int) {
-        viewModelScope.launch {
-            repository.setCheckInAccountSelectionMode(mode)
-        }
+        viewModelScope.launch { repository.setCheckInAccountSelectionMode(mode) }
     }
 
     fun toggleCheckInSelectAllOnScan(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setCheckInSelectAllOnScan(enabled)
-        }
+        viewModelScope.launch { repository.setCheckInSelectAllOnScan(enabled) }
     }
 
     fun setAppTheme(theme: String) {
-        viewModelScope.launch {
-            repository.setAppTheme(theme)
-        }
+        viewModelScope.launch { repository.setAppTheme(theme) }
     }
 
     fun setThemeColor(color: String) {
-        viewModelScope.launch {
-            repository.setThemeColor(color)
-        }
+        viewModelScope.launch { repository.setThemeColor(color) }
     }
 
     fun toggleShowUnsupportedTasks(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setShowUnsupportedTasks(enabled)
-        }
+        viewModelScope.launch { repository.setShowUnsupportedTasks(enabled) }
     }
 
     fun setActiveDialog(dialog: SettingsDialogOpen?) {
@@ -303,9 +177,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun toggleShowUnnecessaryCourses(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setShowUnnecessaryCourses(enabled)
-        }
+        viewModelScope.launch { repository.setShowUnnecessaryCourses(enabled) }
     }
 
     fun setMaxImageCacheSize(size: Int) {
@@ -316,46 +188,34 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setUserAgent(ua: String) {
-        viewModelScope.launch {
-            repository.setUserAgent(ua)
-        }
+        viewModelScope.launch { repository.setUserAgent(ua) }
     }
 
     fun setPackageName(packageName: String) {
         viewModelScope.launch {
             val name = packageName.ifBlank { "com.chaoxing.mobile" }
             repository.setPackageName(name)
-            // 重新生成 UA
-            repository.setUserAgent("")
-            _userAgent.value = NetworkClient.getUserAgent()
+            repository.setUserAgent("") // Trigger UA regeneration
         }
     }
 
     fun setLocationMethod(method: String) {
-        viewModelScope.launch {
-            repository.setLocationMethod(method)
-        }
+        viewModelScope.launch { repository.setLocationMethod(method) }
     }
 
     fun toggleCacheAllAccountsOnStartup(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setCacheAllAccountsOnStartup(enabled)
-        }
+        viewModelScope.launch { repository.setCacheAllAccountsOnStartup(enabled) }
     }
 
     fun toggleExcludeCheckedInAccounts(enabled: Boolean) {
-        viewModelScope.launch {
-            repository.setExcludeCheckedInAccounts(enabled)
-        }
+        viewModelScope.launch { repository.setExcludeCheckedInAccounts(enabled) }
     }
 
     fun updateDeviceId(id: String) {
         viewModelScope.launch {
             NetworkClient.setDeviceId(id)
             _deviceId.value = id
-            // 重新生成 UA
-            repository.setUserAgent("")
-            _userAgent.value = NetworkClient.getUserAgent()
+            repository.setUserAgent("") // Trigger UA regeneration
         }
     }
 }

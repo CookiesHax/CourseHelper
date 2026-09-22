@@ -69,7 +69,8 @@ fun CameraScreen(
     // 监听扫码结果
     val scanResult by viewModel.scanResult.collectAsStateWithLifecycle()
     val settingsViewModel: SettingsViewModel = viewModel()
-    val preferOkHttpOverWebView by settingsViewModel.preferOkHttpOverWebView.collectAsStateWithLifecycle()
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val preferOkHttpOverWebView = settingsUiState.preferOkHttpOverWebView
 
     val configuration = LocalConfiguration.current
     val isLandscape =
