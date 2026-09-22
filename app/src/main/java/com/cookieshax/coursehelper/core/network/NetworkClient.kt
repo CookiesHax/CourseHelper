@@ -140,7 +140,13 @@ object NetworkClient {
         asUser: String? = AccountRepository.activeAccountIdFlow.value
     ): ApiResult<String> {
         val requestUrl = buildUrl(url, params)
-        return performRequest(requestUrl, headers, asUser) { builder -> builder.get() }
+        return performRequest(
+            url = requestUrl,
+            headers = headers,
+            asUser = asUser,
+            requestAction = { builder -> builder.get() },
+            parser = { response -> response.body.string() }
+        )
     }
 
     suspend fun getBytes(
@@ -151,11 +157,12 @@ object NetworkClient {
     ): ApiResult<ByteArray> {
         val requestUrl = buildUrl(url, params)
         return performRequest(
-            requestUrl,
-            headers,
-            asUser,
-            isByteRequest = true
-        ) { builder -> builder.get() }
+            url = requestUrl,
+            headers = headers,
+            asUser = asUser,
+            requestAction = { builder -> builder.get() },
+            parser = { response -> response.body.bytes() }
+        )
     }
 
     suspend fun post(
@@ -167,13 +174,19 @@ object NetworkClient {
     ): ApiResult<String> {
         val requestUrl = buildUrl(url, params)
 
-        return performRequest(requestUrl, headers, asUser) { builder ->
-            val formBodyBuilder = FormBody.Builder()
-            bodyMap?.forEach { (key, value) ->
-                formBodyBuilder.add(key, value.toString())
-            }
-            builder.post(formBodyBuilder.build())
-        }
+        return performRequest(
+            url = requestUrl,
+            headers = headers,
+            asUser = asUser,
+            requestAction = { builder ->
+                val formBodyBuilder = FormBody.Builder()
+                bodyMap?.forEach { (key, value) ->
+                    formBodyBuilder.add(key, value.toString())
+                }
+                builder.post(formBodyBuilder.build())
+            },
+            parser = { response -> response.body.string() }
+        )
     }
 
     suspend fun postMultipart(
@@ -185,23 +198,29 @@ object NetworkClient {
     ): ApiResult<String> {
         val requestUrl = buildUrl(url, params)
 
-        return performRequest(requestUrl, headers, asUser) { builder ->
-            val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
+        return performRequest(
+            url = requestUrl,
+            headers = headers,
+            asUser = asUser,
+            requestAction = { builder ->
+                val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
 
-            parts.forEach { (key, value) ->
-                when (value) {
-                    is File -> {
-                        val requestFile = value.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                        multipartBuilder.addFormDataPart(key, value.name, requestFile)
-                    }
+                parts.forEach { (key, value) ->
+                    when (value) {
+                        is File -> {
+                            val requestFile = value.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                            multipartBuilder.addFormDataPart(key, value.name, requestFile)
+                        }
 
-                    else -> {
-                        multipartBuilder.addFormDataPart(key, value.toString())
+                        else -> {
+                            multipartBuilder.addFormDataPart(key, value.toString())
+                        }
                     }
                 }
-            }
-            builder.post(multipartBuilder.build())
-        }
+                builder.post(multipartBuilder.build())
+            },
+            parser = { response -> response.body.string() }
+        )
     }
 
     private fun buildUrl(url: String, params: Map<String, Any?>?): String {
@@ -286,8 +305,8 @@ object NetworkClient {
         url: String,
         headers: Map<String, String>?,
         asUser: String?,
-        isByteRequest: Boolean = false,
-        requestAction: (Request.Builder) -> Request.Builder
+        requestAction: (Request.Builder) -> Request.Builder,
+        parser: (Response) -> T?
     ): ApiResult<T> = withContext(Dispatchers.IO) {
         try {
             val requestBuilder = Request.Builder().url(url)
@@ -299,23 +318,18 @@ object NetworkClient {
             }
 
             val finalRequest = requestAction(requestBuilder).build()
-            val response = client.newCall(finalRequest).execute()
+            client.newCall(finalRequest).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return@withContext ApiResult.Error("HTTP Error: ${response.code}", response.code)
+                }
 
-            if (!response.isSuccessful) {
-                return@withContext ApiResult.Error("HTTP Error: ${response.code}", response.code)
-            }
+                val result = parser(response)
 
-            @Suppress("UNCHECKED_CAST")
-            val result = if (isByteRequest) {
-                response.body.bytes() as? T
-            } else {
-                response.body.string() as? T
-            }
-
-            if (result != null) {
-                ApiResult.Success(result)
-            } else {
-                ApiResult.Error("Empty response body")
+                if (result != null) {
+                    ApiResult.Success(result)
+                } else {
+                    ApiResult.Error("Empty response body")
+                }
             }
         } catch (e: IOException) {
             ApiResult.Error("Network error: ${e.message}")

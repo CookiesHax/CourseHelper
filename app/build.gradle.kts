@@ -303,7 +303,7 @@ dependencies {
     // Jsoup
     implementation(libs.jsoup)
 
-    // Retrofit
+    // Coil
     implementation(libs.coil.compose)
 
     // DataStore
