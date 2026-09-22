@@ -38,25 +38,39 @@ class CourseHelperApplication : Application() {
         super.onCreate()
         instance = this
 
-        // 必须在任何百度 SDK 功能初始化之前同意隐私政策
-        SDKInitializer.setAgreePrivacy(applicationContext, true) // 地图 SDK 隐私政策
-        LocationClient.setAgreePrivacy(true) // 定位 SDK 隐私政策
+        // 初始化 SDK 隐私政策
+        SDKInitializer.setAgreePrivacy(applicationContext, true)
+        LocationClient.setAgreePrivacy(true)
 
-        // 异步初始化
+        val settings = SettingsRepository(this)
+
+        // 异步初始化任务
         applicationScope.launch(Dispatchers.IO) {
+            // 基础组件预热
             NetworkClient.preheat()
-            val settings = SettingsRepository(applicationContext)
-
             ChaoXingAppInfo.packageName = settings.packageName.first()
 
+            // 启动时缓存清理
             if (settings.clearCacheOnStartup.first()) {
                 val days = settings.cacheExpirationDays.first()
                 FileUtils.cleanupCache(applicationContext, days * 86400L)
             }
+
+            // 课程数据预加载
+            val showUnnecessary = settings.showUnnecessaryCourses.first()
+            if (settings.cacheAllAccountsOnStartup.first()) {
+                AccountRepository.accountList.value.forEach { account ->
+                    CourseRepository.fetchCourses(account.uid, showUnnecessary)
+                }
+            } else {
+                AccountRepository.activeAccountIdFlow.value?.let { activeId ->
+                    CourseRepository.fetchCourses(activeId, showUnnecessary)
+                }
+            }
         }
 
+        // 响应式配置监听
         applicationScope.launch {
-            val settings = SettingsRepository(applicationContext)
             settings.locationMethod.collect { methodStr ->
                 val method = try {
                     LocationMethod.valueOf(methodStr)
@@ -64,31 +78,6 @@ class CourseHelperApplication : Application() {
                     LocationMethod.BAIDU
                 }
                 LocationService.setLocationMethod(method)
-            }
-        }
-
-        applicationScope.launch(Dispatchers.IO) {
-            val settings = SettingsRepository(applicationContext)
-            val showUnnecessaryCourses = settings.showUnnecessaryCourses.first()
-            if (settings.cacheAllAccountsOnStartup.first()) {
-                // 等待账号列表加载
-                val accounts = AccountRepository.accountList.value
-                if (accounts.isEmpty()) {
-                    // 如果当前为空 尝试等待第一次发射
-                    AccountRepository.accountList.first().forEach { account ->
-                        CourseRepository.fetchCourses(account.uid, showUnnecessaryCourses)
-                    }
-                } else {
-                    accounts.forEach { account ->
-                        CourseRepository.fetchCourses(account.uid, showUnnecessaryCourses)
-                    }
-                }
-            } else {
-                // 仅缓存活动账号
-                val activeId = AccountRepository.activeAccountIdFlow.value
-                if (activeId != null) {
-                    CourseRepository.fetchCourses(activeId, showUnnecessaryCourses)
-                }
             }
         }
 
